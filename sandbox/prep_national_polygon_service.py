@@ -5,6 +5,11 @@ import pandas as pd
 
 # COMMAND ----------
 
+# MAGIC %run
+# MAGIC ./paths
+
+# COMMAND ----------
+
 # set file path
 national_polygon_paths = [
     '/dbfs/mnt/base/restricted/source_data_gov_hm_land_registry/dataset_nps_national_polygon/format_SHP_nps_national_polygon/LATEST_nps_national_polygon/LR_POLY_FULL_NOV_2023_0.shp',
@@ -22,6 +27,23 @@ ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.go
 
 # COMMAND ----------
 
+# read in ccod data
+ccod = pd.read_csv(
+    ccod_path,    
+    usecols=[
+        "Title Number",
+        "Tenure",
+        "Proprietor Name (1)",
+        "Company Registration No. (1)",
+        "Proprietorship Category (1)",
+        "Proprietor (1) Address (1)",
+        "Date Proprietor Added",
+        "Additional Proprietor Indicator"
+        ]
+)
+
+# COMMAND ----------
+
 # import ccod defra data
 ccod_defra = pd.read_csv(ccod_defra_path, sep = ',')
 title_numbers_of_interest = ccod_defra['Title Number'].unique()
@@ -36,7 +58,7 @@ title_numbers_of_interest_sql_string = f'({title_numbers_of_interest_sql_string}
 # import national polygon dataset
 national_polygon_dfs = []
 for national_polygon_path in national_polygon_paths:
-    national_polygon_df = gpd.read_file(national_polygon_path, where = f'TITLE_NO IN {title_numbers_of_interest_sql_string}')
+    national_polygon_df = gpd.read_file(national_polygon_path)#, where = f'TITLE_NO IN {title_numbers_of_interest_sql_string}')
     national_polygon_dfs.append(national_polygon_df)
     print(f'loaded into dataframe: {national_polygon_path}')
 national_polygon = pd.concat(national_polygon_dfs, ignore_index=True)
@@ -44,9 +66,38 @@ national_polygon = pd.concat(national_polygon_dfs, ignore_index=True)
 
 # COMMAND ----------
 
+# join polygon dataset with defra ccod data
+polygon_ccod_defra = national_polygon.merge(ccod_defra, how='inner', left_on='TITLE_NO', right_on='Title Number')
 # join polygon dataset with ccod data
-polygon_ccod = national_polygon.merge(ccod_defra, how='inner', left_on='TITLE_NO', right_on='Title Number')
+polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', right_on='Title Number')
 
+
+# COMMAND ----------
+
+polygon_ccod_defra_buffered = polygon_ccod_defra
+polygon_ccod_defra_buffered['geometry'] = polygon_ccod_defra_buffered.geometry.buffer(1)
+
+# COMMAND ----------
+
+polygon_ccod_defra_buffered
+
+# COMMAND ----------
+
+polygon_ccod
+
+# COMMAND ----------
+
+national_polygon_bordering_defra_properties = polygon_ccod.sjoin(polygon_ccod_defra_buffered, how='inner', lsuffix='_all', rsuffix='_defra')
+
+# COMMAND ----------
+
+national_polygon_bordering_defra_properties
+
+# COMMAND ----------
+
+defra_bordered_corporate_body_proprietors = national_polygon_bordering_defra_properties[national_polygon_bordering_defra_properties['Proprietorship Category (1)__all']=='Corporate Body']
+defra_bordered_proprietors = national_polygon_bordering_defra_properties['Proprietor Name (1)__all'].unique()
+pd.DataFrame(defra_bordered_proprietors)
 
 # COMMAND ----------
 
@@ -60,7 +111,9 @@ polygon_ccod.head(5)
 polygon_ccod_dissolved = polygon_ccod.dissolve()
 print(len(polygon_ccod_dissolved))
 dissolved_area = polygon_ccod_dissolved['geometry'].area.sum()
-print(f'Are using dissolved polygons is: {dissolved_area}')
+print(type(dissolved_area))
+dissolved_area_sqkm = dissolved_area/1000000
+print(f'Are using dissolved polygons is: {dissolved_area} square metres, or {dissolved_area_sqkm} square kilometres')
 
 # COMMAND ----------
 
