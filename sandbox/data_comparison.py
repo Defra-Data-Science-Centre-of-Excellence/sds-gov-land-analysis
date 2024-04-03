@@ -48,22 +48,77 @@ display(ccod_of_interest)
 
 # COMMAND ----------
 
+# import title list provided by ea
 ea_titles = pd.read_excel(ea_titles_path, sheet_name='Freehold_titles_102023')
 display(ea_titles)
 
 # COMMAND ----------
 
-# Get ea only
+# Get ea records from ccod data selected by my methods
 ea_ccod = ccod_of_interest[ccod_of_interest['Current_organisation'] == 'Environment Agency']
 
 # COMMAND ----------
 
-# join on title number to enable comparison
-previous_current_defra_names_comparison = ea_ccod.merge(ea_titles, how='outer', left_on='Title Number', right_on='Title')
+# join selected ea ccod data to ea title list (on title number) to enable comparison
+ea_ccod_and_supplied_titles = ea_ccod.merge(ea_titles, how='outer', left_on='Title Number', right_on='Title', suffixes=('_filtered_ccod','_ea'))
+display(ea_ccod_and_supplied_titles)
 
 # COMMAND ----------
 
-# Find in ccod ea titles which have not been identified by my script
-unidentified_ea_titles = previous_current_defra_names_comparison[previous_current_defra_names_comparison['Title Number'].isna()]
-unidentified_ea_titles_ccod = ccod.merge(unidentified_ea_titles, how='inner', left_on='Title Number', right_on='Title')
+# Find ea titles which have not been identified by my script, by selecting for null Title Number (from selected ea ccod table) field. Then join to unfiltered ccod data to get attribute info.
+unidentified_ea_titles = ea_ccod_and_supplied_titles[ea_ccod_and_supplied_titles['Title Number'].isna()]
+unidentified_ea_titles_ccod = ccod.merge(unidentified_ea_titles, how='inner', left_on='Title Number', right_on='Title', suffixes=('_unfiltered_ccod','_comparison_table'))
 display(unidentified_ea_titles_ccod)
+
+# COMMAND ----------
+
+# get unique list of proprietors for data not selected 
+display(unidentified_ea_titles_ccod['Proprietor Name (1)_unfiltered_ccod'].unique())
+
+# COMMAND ----------
+
+# Find in ccod ea titles which have been identified by my script, but aren't in list from ea. Don't need to join back to unfiltered ccod data here as it should already be present from filtered ccod data.
+extra_identified_ea_titles = ea_ccod_and_supplied_titles[ea_ccod_and_supplied_titles['Title'].isna()]
+# Remove leasehold as the EA only provided Freehold titles in their list
+extra_identified_ea_titles = extra_identified_ea_titles[extra_identified_ea_titles['Tenure_filtered_ccod']=='Freehold']
+display(extra_identified_ea_titles)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### NE Data Comparison
+
+# COMMAND ----------
+
+# Import title list provided by NE
+ne_titles = pd.read_csv(ne_titles_path)
+# Rename Title NUmber field to 'Title' field (to match EA and help column tracking/maintenance)
+ne_titles = ne_titles.rename(columns={'Title Number': 'Title'})
+display(ne_titles)
+
+# COMMAND ----------
+
+# Get ne records from ccod data selected by my methods
+ne_ccod = ccod_of_interest[ccod_of_interest['Current_organisation'] == 'Natural England']
+
+# COMMAND ----------
+
+# join selected ne ccod data to ne title list (on title number) to enable comparison
+ne_ccod_and_supplied_titles = ne_ccod.merge(ne_titles, how='outer', left_on='Title Number', right_on='Title')
+display(ne_ccod_and_supplied_titles)
+
+# COMMAND ----------
+
+# Find ne titles which have not been identified by my script, by selecting for null Title Number (from selected ne ccod table) field. Then join to unfiltered ccod data to get attribute info.
+unidentified_ne_titles = ne_ccod_and_supplied_titles[ne_ccod_and_supplied_titles['Title Number'].isna()]
+unidentified_ne_titles_ccod = ccod.merge(unidentified_ne_titles, how='inner', left_on='Title Number', right_on='Title')
+display(unidentified_ne_titles)
+
+# Joining back to unfiltered ccod data produces empty table error, suggesting title numbers aren't present in unfiltered ccod - need to check this
+
+
+# COMMAND ----------
+
+# Find in ccod ne titles which have been identified by my script, but aren't in list from ne. Don't need to join back to unfiltered ccod data here as it should already be present from filtered ccod data.
+extra_identified_ne_titles = ne_ccod_and_supplied_titles[ne_ccod_and_supplied_titles['Title'].isna()]
+display(extra_identified_ne_titles)
