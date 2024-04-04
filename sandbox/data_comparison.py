@@ -6,6 +6,7 @@
 
 import pandas as pd
 import openpyxl
+import geopandas as gpd
 
 # COMMAND ----------
 
@@ -122,3 +123,33 @@ display(unidentified_ne_titles)
 # Find in ccod ne titles which have been identified by my script, but aren't in list from ne. Don't need to join back to unfiltered ccod data here as it should already be present from filtered ccod data.
 extra_identified_ne_titles = ne_ccod_and_supplied_titles[ne_ccod_and_supplied_titles['Title'].isna()]
 display(extra_identified_ne_titles)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Forestry Commission data comparison
+
+# COMMAND ----------
+
+fe_title_polygons = gpd.read_file(fe_title_polygons_path)
+
+# COMMAND ----------
+
+display(fe_title_polygons)
+
+# COMMAND ----------
+
+import folium
+
+# COMMAND ----------
+
+fe_title_polygons_half = fe_title_polygons[1:1000]
+
+# COMMAND ----------
+
+m = folium.Map(location=(53, -3), zoom_start= 6, tiles="cartodb positron")
+folium.GeoJson(fe_title_polygons_half).add_to(m)
+
+# COMMAND ----------
+
+m
