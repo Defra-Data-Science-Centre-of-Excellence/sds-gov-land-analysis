@@ -1,6 +1,7 @@
 # Databricks notebook source
 from thefuzz import fuzz
 import pandas as pd
+from thefuzz import process
 
 # COMMAND ----------
 
@@ -28,14 +29,33 @@ ccod.head()
 
 # COMMAND ----------
 
-ccod["match"] = ccod["Proprietor Name (1)"].apply(
-  lambda x: fuzz.token_set_ratio(x, 'secretary')
-)
+ccod["Proprietor Name (1)"] = ccod["Proprietor Name (1)"].astype(str)
+
+# COMMAND ----------
+
+match_options = ['environment', 'agency']
+
+# COMMAND ----------
+
+for match_option in match_options:
+  ccod["match_" + match_option] = ccod["Proprietor Name (1)"].apply(
+    lambda x: process.extractOne(match_option,x.split(' '), scorer=fuzz.ratio)
+  )
 
 
 # COMMAND ----------
 
-ccod.head()
+display(ccod)
+
+# COMMAND ----------
+
+ccod["match"].str[1]
+
+# COMMAND ----------
+
+near_matches_and_matches = ccod[ccod["match_environment"].str[1]>80]
+near_matches = near_matches_and_matches[near_matches_and_matches['match_agency'].str[1]>80]
+display(near_matches['match_agency'].unique())
 
 # COMMAND ----------
 
