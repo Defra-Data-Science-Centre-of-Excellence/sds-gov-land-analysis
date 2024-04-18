@@ -10,6 +10,15 @@ from thefuzz import process
 
 # COMMAND ----------
 
+def get_fuzzy_match_min_score(string_to_search, match_options):
+  best_match_scores = list()
+  for match_option in match_options:
+    best_match = process.extractOne(match_option,string_to_search.split(' '), scorer=fuzz.ratio)
+    best_match_scores.append(best_match[1])
+  return(min(best_match_scores))
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC #######Set file paths
 
@@ -65,6 +74,10 @@ cs_department_translation_dict = {
     'Department for Environment, Food and Rural Affairs':
         ['environment', 'food', 'rural']
 }
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
@@ -292,6 +305,23 @@ alb_found_names_translation_dict = {
 
 # COMMAND ----------
 
+ccod["Proprietor Name (1)"] = ccod["Proprietor Name (1)"].astype(str)
+
+# COMMAND ----------
+
+for current_org, org_names in alb_found_names_translation_dict.items():
+    for org_name in org_names:
+        if org_name != '':
+            ccod["min_match_ratio"] = ccod["Proprietor Name (1)"].apply(
+                lambda x: get_fuzzy_match_min_score(x, org_name.split(' ')))
+            ccod_filtered = ccod[ccod['min_match_ratio'] > 80]
+            found_names = ccod_filtered['Proprietor Name (1)'].unique()
+            # add found potential name to translation dict
+            alb_found_names_translation_dict[current_org][org_name] = found_names.tolist()
+display(alb_found_names_translation_dict)
+
+# COMMAND ----------
+
 # find likely names to populate translation dict
 regex_str = r'^{}'
 expression = '(?=.*{})'
@@ -328,6 +358,26 @@ def remove_found_name(current_organisation_name, organisation_instance_name, fou
     print(f'{found_name_for_removal} removed from current org: {current_organisation_name}, organisation instance: {organisation_instance_name}')
     print(f'This leaves the remaining found names: {alb_found_names_translation_dict[current_organisation_name][organisation_instance_name]}')
 
+
+# COMMAND ----------
+
+ea_wrong_names = ['THE ENVIRONMENT AGENCY (WALES)']
+for name in ea_wrong_names:
+    remove_found_name('Environment Agency', 'Environment Agency', name, alb_found_names_translation_dict)
+
+# COMMAND ----------
+
+fc_wrong_names = ['NHS WALTHAM FOREST CLINICAL COMMISSIONING GROUP',]
+for name in fc_wrong_names:
+    remove_found_name('Forestry Commission', 'Forestry Commission', name, alb_found_names_translation_dict)
+
+fe_wrong_names = ["HEART OF ENGLAND FOREST LIMITED","THE HEART OF ENGLAND FOREST LTD","HEART OF ENGLAND FOREST","ARDEN FOREST CHURCH OF ENGLAND MULTI ACADEMY TRUST","THE HEART OF ENGLAND FOREST","ARDEN FOREST CHURCH OF ENGLAND MULTI-ACADEMY TRUST","THE HEART OF ENGLAND FOREST LIMITED"]
+for name in fe_wrong_names:
+    remove_found_name('Forestry Commission', 'Forestry England', name, alb_found_names_translation_dict)
+
+fr_wrong_names = ["FORRESTER RESEARCH LIMITED"]
+for name in fr_wrong_names:
+    remove_found_name('Forestry Commission', 'Forestry Research', name, alb_found_names_translation_dict)
 
 # COMMAND ----------
 
