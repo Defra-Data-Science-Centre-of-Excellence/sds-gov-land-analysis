@@ -27,6 +27,11 @@ national_polygon_paths = [
 # COMMAND ----------
 
 ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/ccod_defra.csv'
+polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/polygon_ccod_defra.csv'
+
+# COMMAND ----------
+
+polygon_ccod_fe_unfiltered_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/polygon_ccod_fe_unfiltered.csv'
 
 # COMMAND ----------
 
@@ -47,7 +52,7 @@ ne_title_polygons_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@d
 # COMMAND ----------
 
 # Forestry commission
-fe_title_polygons_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/existing_data_for_comparison/forestry_commission/National_Forest_Estate_Subcompartments_England_2019.shp"
+fe_polygons_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/existing_data_for_comparison/forestry_commission/National_Forest_Estate_Subcompartments_England_2019.shp"
 
 #
 fe_title_polygons_with_ccod_data_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/existing_data_for_comparison/forestry_commission/fe_ownership_parcels_intersecting_nps_polygon_ccod.geojson'

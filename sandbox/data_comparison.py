@@ -73,8 +73,7 @@ display(unidentified_ea_titles_ccod)
 
 # COMMAND ----------
 
-# get unique list of proprietors for data not selected 
-display(unidentified_ea_titles_ccod['Proprietor Name (1)_unfiltered_ccod'].unique())
+display(unidentified_ea_titles_ccod['Proprietor Name (1)_unfiltered_ccod'].value_counts())
 
 # COMMAND ----------
 
@@ -83,6 +82,10 @@ extra_identified_ea_titles = ea_ccod_and_supplied_titles[ea_ccod_and_supplied_ti
 # Remove leasehold as the EA only provided Freehold titles in their list
 extra_identified_ea_titles = extra_identified_ea_titles[extra_identified_ea_titles['Tenure_filtered_ccod']=='Freehold']
 display(extra_identified_ea_titles)
+
+# COMMAND ----------
+
+display(extra_identified_ea_titles['Proprietor Name (1)'].value_counts())
 
 # COMMAND ----------
 
@@ -126,16 +129,63 @@ display(extra_identified_ne_titles)
 
 # COMMAND ----------
 
+display(extra_identified_ne_titles['Proprietor Name (1)'].value_counts())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Defra data comparison
+
+# COMMAND ----------
+
+defra_ccod = ccod_of_interest[ccod_of_interest['Current_organisation'] == 'Department for Environment, Food and Rural Affairs']
+
+# COMMAND ----------
+
+defra_proposed_title_numbers = defra_ccod['Title Number'].unique()
+print(len(defra_proposed_title_numbers))
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Forestry Commission data comparison
 
 # COMMAND ----------
 
-fe_title_polygons = gpd.read_file(fe_title_polygons_path)
+fc_ccod = ccod_of_interest[ccod_of_interest['Current_organisation'] == 'Forestry Commission']
+display(fc_ccod)
 
 # COMMAND ----------
 
-display(fe_title_polygons)
+# import supplied fe polygon data which has been spatially joined to nps-ccod data
+fe_title_polygons_with_ccod_data = gpd.read_file(fe_title_polygons_with_ccod_data_path)
+
+# COMMAND ----------
+
+# get total number of titles identifies as possible fe titles
+fe_proposed_title_number_counts = fe_title_polygons_with_ccod_data['Title Number'].value_counts()
+display(fe_proposed_title_number_counts.to_frame().reset_index())
+# this is quite a lot
+
+# COMMAND ----------
+
+# get the count of different proprietors associated with proposed fe titles
+fe_proposed_title_name_counts = fe_title_polygons_with_ccod_data['Proprietor Name (1)'].value_counts()
+display(fe_proposed_title_name_counts.to_frame().reset_index())
+# lots of these don't look like fe proprietor names - possible leasehold/freehold thing?
+
+# COMMAND ----------
+
+# remove 
+
+# COMMAND ----------
+
+display(fe_title_polygons_with_ccod_data)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Plotting
 
 # COMMAND ----------
 

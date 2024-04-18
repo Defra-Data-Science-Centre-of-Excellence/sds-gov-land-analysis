@@ -1,5 +1,12 @@
 # Databricks notebook source
+# MAGIC %sh
+# MAGIC pip install thefuzz
+
+# COMMAND ----------
+
 import pandas as pd
+from thefuzz import fuzz
+from thefuzz import process
 
 # COMMAND ----------
 
@@ -205,6 +212,82 @@ alb_found_names_translation_dict = {
         'Forestry England': [],
         'Forestry Research': [],
     },
+    'The Water Services Regulation Authority':{
+        'The Water Services Regulation Authority': [],
+    },
+    'Centre for Environment, Fisheries and Aquaculture Science':{
+        'Centre for Environment, Fisheries and Aquaculture Science': [],
+    },
+    'Veterinary Medicines Directorate':{
+        'Veterinary Medicines Directorate': [],
+    },
+    'Consumer Council for Water':{
+        'Consumer Council for Water': [],
+    },
+    'Office for Environmental Protection':{
+        'Office for Environmental Protection': [],
+    },
+    'Seafish':{
+        'Seafish': [],
+    },
+    'Advisory Committee on Releases to the Environment':{
+        'Advisory Committee on Releases to the Environment': [],
+    },  
+    # check this is okay
+    'Defra\'s Science Advisory Council':{
+        'Defra\'s Science Advisory Council': [],
+    },
+    'Independent Agricultural Appeals Panel':{
+        'Independent Agricultural Appeals Panel': [],
+    },
+    'Veterinary Products Committee':{
+        'Veterinary Products Committee': [],
+    },
+    'Plant Varieties and Seeds Tribunal':{
+        'Plant Varieties and Seeds Tribunal': [],
+    },
+    'British Wool':{
+        'British Wool': [],
+    },
+    'Broads Authority':{
+        'Broads Authority': [],
+    },
+    'Covent Garden Market Authority':{
+        'Covent Garden Market Authority': [],
+    },
+    'Dartmoor National Park Authority':{
+        'Dartmoor National Park Authority': [],
+    },
+    'Exmoor National Park Authority':{
+        'Exmoor National Park Authority': [],
+    },
+    'Flood Re':{
+        'Flood Re': [],
+    },
+    'Lake District National Park Authority':{
+        'Lake District National Park Authority': [],
+    },
+    'National Forest Company':{
+        'National Forest Company': [],
+    },
+    'New Forest National Park Authority':{
+        'New Forest National Park Authority': [],
+    },
+    'North York Moors National Park Authority':{
+        'North York Moors National Park Authority': [],
+    },
+    'Northumberland National Park Authority':{
+        'Northumberland National Park Authority': [],
+    },
+    'Peak District National Park Authority':{
+        'Peak District National Park Authority': [],
+    },
+    'South Downs National Park Authority':{
+        'South Downs National Park Authority': [],
+    },
+    'Yorkshire Dales National Park Authority':{
+        'Yorkshire Dales National Park Authority': [],
+    },
 }
 
 # COMMAND ----------
@@ -240,8 +323,39 @@ display(alb_found_names_translation_df)
 
 # Remove found name from translation dict
 
-def remove_found_name(current_organisation_name, organisation_instance_name, found_name_for_removal):
-    
+def remove_found_name(current_organisation_name, organisation_instance_name, found_name_for_removal, alb_found_names_translation_dict):
+    alb_found_names_translation_dict[current_organisation_name][organisation_instance_name].remove(found_name_for_removal)
+    print(f'{found_name_for_removal} removed from current org: {current_organisation_name}, organisation instance: {organisation_instance_name}')
+    print(f'This leaves the remaining found names: {alb_found_names_translation_dict[current_organisation_name][organisation_instance_name]}')
+
+
+# COMMAND ----------
+
+british_wool_wrong_names = ['ROYAL BRITISH LEGION WOOLSTON WITH MARTINSCROFT EX SERVICEMANS CLUB LIMITED', 'WOOL ROYAL BRITISH LEGION CLUB LIMITED',"BRITISH WOOL COMPANY (WEMBLEY) LIMITED","BRITISH WOOL MARKETING BOARD"]
+for name in british_wool_wrong_names:
+    remove_found_name('British Wool', 'British Wool', name, alb_found_names_translation_dict)
+
+
+
+# COMMAND ----------
+
+print(alb_found_names_translation_dict['Flood Re']['Flood Re'])
+
+# COMMAND ----------
+
+flood_re_wrong_names = ['119 FLOOD STREET LIMITED', 'LONDON FLOOD PREVENTION LTD', 'FLOOD STREET MANAGEMENT COMPANY LIMITED', '109 FLOOD STREET LIMITED', 'FLOOD STREET LIMITED', 'FLOODLIGHT LEISURE LIMITED', '24 HR FIRE & FLOOD ASSISTANCE LIMITED', '111 FLOOD STREET LIMITED', '115 FLOOD STREET LIMITED']
+for name in flood_re_wrong_names:
+    remove_found_name('Flood Re', 'Flood Re', name, alb_found_names_translation_dict)
+
+# COMMAND ----------
+
+seafish_wrong_names = ["BRIXHAM SEAFISH COMPANY LIMITED","SEAFISH IMPORTERS LIMITED","SEAFISH U.K. LIMITED"]
+for name in seafish_wrong_names:
+    remove_found_name('Seafish', 'Seafish', name, alb_found_names_translation_dict)
+
+# COMMAND ----------
+
+print(alb_found_names_translation_dict)
 
 # COMMAND ----------
 
@@ -264,23 +378,4 @@ display(ccod_of_interest)
 
 # COMMAND ----------
 
-ccod_of_interest.to_csv("/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/ccod_of_interest.csv")
-
-# COMMAND ----------
-
-ccod_identified = ccod[ccod['organisation'].notnull()]
-print(ccod_identified['Proprietor Name (1)'].unique())
-
-# COMMAND ----------
-
-import re
-ccod['Proprietor (1) Postcode (1)'] = ccod["Proprietor (1) Address (1)"].str.extract(r"([a-z]{1,2}[\d]{1,2}[a-z]{0,1} [\d]{1}[a-z]{2})$", flags=re.IGNORECASE)
-
-# COMMAND ----------
-
-ccod_of_interest = ccod[ccod['Current_organisation'] == 'Department for Environment, Food and Rural Affairs']
-
-# COMMAND ----------
-
-postcodes_of_interest = ccod_of_interest.drop_duplicates(subset=['Proprietor (1) Address (1)','Proprietor (1) Postcode (1)'])
-display(postcodes_of_interest)
+ccod_of_interest.to_csv("/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/ccod_of_interest_defra_and_albs.csv")

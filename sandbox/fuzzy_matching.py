@@ -1,4 +1,9 @@
 # Databricks notebook source
+# MAGIC %sh
+# MAGIC pip install thefuzz
+
+# COMMAND ----------
+
 from thefuzz import fuzz
 import pandas as pd
 from thefuzz import process
@@ -37,11 +42,33 @@ match_options = ['environment', 'agency']
 
 # COMMAND ----------
 
-for match_option in match_options:
-  ccod["match_" + match_option] = ccod["Proprietor Name (1)"].apply(
-    lambda x: process.extractOne(match_option,x.split(' '), scorer=fuzz.ratio)
-  )
+def get_fuzzy_match_min_score(string_to_search, match_options):
+  best_match_scores = list()
+  for match_option in match_options:
+    best_match = process.extractOne(match_option,string_to_search.split(' '), scorer=fuzz.ratio)
+    best_match_scores.append(best_match[1])
+  return(min(best_match_scores))
 
+#for match_option in match_options:
+#  ccod["match_" + match_option] = ccod["Proprietor Name (1)"].apply(
+#    lambda x: process.extractOne(match_option,x.split(' '), scorer=fuzz.ratio)
+#  )
+
+
+# COMMAND ----------
+
+match_options = ['environment','agency']
+ccod["min_match_ratio"] = ccod["Proprietor Name (1)"].apply(
+    lambda x: get_fuzzy_match_min_score(x, match_options))
+
+# COMMAND ----------
+
+ccod_imperfect = ccod[ccod["min_match_ratio"] != 100]
+ccod_near_matches = ccod_imperfect[ccod_imperfect["min_match_ratio"] > 80]
+
+# COMMAND ----------
+
+ccod_near_matches
 
 # COMMAND ----------
 

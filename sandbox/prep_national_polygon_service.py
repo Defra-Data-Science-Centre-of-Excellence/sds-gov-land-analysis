@@ -35,6 +35,10 @@ ccod = pd.read_csv(
 
 # import ccod filtered for defra data
 ccod_defra = pd.read_csv(ccod_defra_path, sep = ',')
+
+# COMMAND ----------
+
+# Create sql statement to select for defra associated title numbers
 title_numbers_of_interest = ccod_defra['Title Number'].unique()
 title_numbers_of_interest_sql_string = ''
 for title_number in title_numbers_of_interest:
@@ -57,8 +61,16 @@ national_polygon = pd.concat(national_polygon_dfs, ignore_index=True)
 
 # join polygon dataset with defra ccod data (this allows you to bring in only selected defra related polygons - which speeds up the import)
 polygon_ccod_defra = national_polygon.merge(ccod_defra, how='inner', left_on='TITLE_NO', right_on='Title Number')
+display(polygon_ccod_defra)
 
+# COMMAND ----------
 
+display(polygon_ccod_defra)
+
+# COMMAND ----------
+
+# write fe polygons with associated ccod info to geojson
+polygon_ccod_defra.to_file(polygon_ccod_defra_path, driver='GeoJSON')
 
 # COMMAND ----------
 
@@ -70,7 +82,7 @@ polygon_ccod_defra = national_polygon.merge(ccod_defra, how='inner', left_on='TI
 # buffer defra polygons, so can identify adjescent polygons by overlap
 # buffer can be changed as needed
 polygon_ccod_defra_buffered = polygon_ccod_defra
-polygon_ccod_defra_buffered['geometry'] = polygon_ccod_defra_buffered.geometry.buffer(1)
+polygon_ccod_defra_buffered['geometry'] = polygon_ccod_defra_buffered.geometry.buffer(0.2)
 
 # COMMAND ----------
 
@@ -83,12 +95,24 @@ display(national_polygon_bordering_defra_properties)
 
 # COMMAND ----------
 
+# remove records where the all nps name = identified defra nps name
+national_polygon_bordering_defra_properties_not_identified_as_defra = national_polygon_bordering_defra_properties[national_polygon_bordering_defra_properties['Proprietor Name (1)__all']!=national_polygon_bordering_defra_properties['Proprietor Name (1)__defra']]
+display(national_polygon_bordering_defra_properties_not_identified_as_defra)
+
+# COMMAND ----------
+
 # Filter for records with proprietorship category of corporate body - as this is what public sector bodies fall under and we're only interested in identifying extra defra land
 defra_bordered_corporate_body_proprietors = national_polygon_bordering_defra_properties[national_polygon_bordering_defra_properties['Proprietorship Category (1)__all']=='Corporate Body']
 # Get unique list of proprietor names
-defra_bordered_proprietors = national_polygon_bordering_defra_properties['Proprietor Name (1)__all'].unique()
+defra_bordered_proprietors = national_polygon_bordering_defra_properties['Proprietor Name (1)__all'].value_counts()
 # print for visual inspection - this is still too many records to look at manually :(
-display(pd.DataFrame(defra_bordered_proprietors))
+display(national_polygon_bordering_defra_properties['Proprietor Name (1)__all'].value_counts().to_frame().reset_index())
+
+# COMMAND ----------
+
+# remove defra proprietor names which have already been identified
+national_polygon_bordering_defra_properties_unidentified = national_polygon_bordering_defra_properties[~national_polygon_bordering_defra_properties['Proprietor Name (1)__all'].isin(ccod_defra['Proprietor Name (1)'])]
+display(national_polygon_bordering_defra_properties_unidentified['Proprietor Name (1)__all'].value_counts().to_frame().reset_index())
 
 # COMMAND ----------
 
@@ -116,10 +140,6 @@ print(f'Area using dissolved polygons is: {dissolved_area} square metres, or {di
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
 # plot using matplotlib
 plot_undissolved = polygon_ccod.plot()
 plot_dissolved = polygon_ccod_dissolved.plot()
@@ -129,36 +149,3 @@ plot_dissolved = polygon_ccod_dissolved.plot()
 # use geopandas explore method to allow zooming
 polygon_ccod_sample = polygon_ccod.sample(1200)
 polygon_ccod_sample.explore()
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Compare forestries england data
-
-# COMMAND ----------
-
-# import fe data
-fe_title_polygons = gpd.read_file(fe_title_polygons_path)
-
-# COMMAND ----------
-
-overlap_fe_polygon_ccod = gpd.sjoin(polygon_ccod, fe_title_polygons, how='inner', lsuffix='_defra', rsuffix='_fe')
-#overlap_fe_defra.explore()
-
-# COMMAND ----------
-
-overlap_fe_polygon_ccod.to_file(fe_title_polygons_with_ccod_data_path, driver='GeoJSON')
-
-# COMMAND ----------
-
-#remove BS16 1EJ entries as we have this already
-fe_unidentified_addresses = overlap_fe_defra[~overlap_fe_defra['Proprietor (1) Address (1)'].str.contains('BS16 1EJ')]
-display(fe_unidentified_addresses['Proprietor (1) Address (1)'].unique())
-
-# COMMAND ----------
-
-display(fe_unidentified_addresses['Proprietor Name (1)'].unique())
-
-# COMMAND ----------
-
-fe_unidentified_addresses.explore()
