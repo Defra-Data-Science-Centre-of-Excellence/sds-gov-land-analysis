@@ -12,7 +12,7 @@ import folium
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Get defra related polygons
+# MAGIC #### Read in required datasets
 
 # COMMAND ----------
 
@@ -27,24 +27,12 @@ ccod = pd.read_csv(
         "Proprietorship Category (1)",
         "Proprietor (1) Address (1)",
         "Date Proprietor Added",
-        "Additional Proprietor Indicator"
+        "Additional Proprietor Indicator",
+        "Proprietor Name (2)",
+        "Proprietor Name (3)",
+        "Proprietor Name (4)"
         ]
 )
-
-# COMMAND ----------
-
-# import ccod filtered for defra data
-ccod_defra = pd.read_csv(ccod_defra_path, sep = ',')
-
-# COMMAND ----------
-
-# Create sql statement to select for defra associated title numbers
-title_numbers_of_interest = ccod_defra['Title Number'].unique()
-title_numbers_of_interest_sql_string = ''
-for title_number in title_numbers_of_interest:
-    title_numbers_of_interest_sql_string = f"{title_numbers_of_interest_sql_string}'{title_number}', "
-title_numbers_of_interest_sql_string = title_numbers_of_interest_sql_string.rstrip(', ')
-title_numbers_of_interest_sql_string = f'({title_numbers_of_interest_sql_string})'
 
 # COMMAND ----------
 
@@ -59,18 +47,64 @@ national_polygon = pd.concat(national_polygon_dfs, ignore_index=True)
 
 # COMMAND ----------
 
+# join polygon dataset with unfiltered ccod data - need this to look at adjascent polyogon info etc.
+polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', right_on='Title Number')
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Extract a study area portion of the NPS
+
+# COMMAND ----------
+
+study_area = gpd.read_parquet(f'{study_area_directory_path}/salisbury.parquet')
+
+# COMMAND ----------
+
+study_area_nps = polygon_ccod.overlay(study_area, how='intersection', keep_geom_type=False, make_valid=True)
+
+# COMMAND ----------
+
+study_area_nps.to_parquet('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/15_minute_greenspace/open_access_land/study_area_nps/salisbury/nps_ccod.parquet')
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Get identified DEFRA polygons
+
+# COMMAND ----------
+
+# import ccod filtered for defra data
+ccod_defra = pd.read_csv(ccod_defra_and_alb_path, sep = ',')
+
+# COMMAND ----------
+
+# Create sql statement to select for defra associated title numbers
+title_numbers_of_interest = ccod_defra['Title Number'].unique()
+title_numbers_of_interest_sql_string = ''
+for title_number in title_numbers_of_interest:
+    title_numbers_of_interest_sql_string = f"{title_numbers_of_interest_sql_string}'{title_number}', "
+title_numbers_of_interest_sql_string = title_numbers_of_interest_sql_string.rstrip(', ')
+title_numbers_of_interest_sql_string = f'({title_numbers_of_interest_sql_string})'
+
+# COMMAND ----------
+
 # join polygon dataset with defra ccod data (this allows you to bring in only selected defra related polygons - which speeds up the import)
 polygon_ccod_defra = national_polygon.merge(ccod_defra, how='inner', left_on='TITLE_NO', right_on='Title Number')
 display(polygon_ccod_defra)
 
 # COMMAND ----------
 
-display(polygon_ccod_defra)
+polygon_ccod_defra_only = polygon_ccod_defra[polygon_ccod_defra['current_organisation'].notna()]
 
 # COMMAND ----------
 
+display(polygon_ccod_defra_only)
+
+# COMMAND ----------
+
+polygon_ccod_defra_only.to_file(polygon_ccod_defra_path, driver='GeoJSON', mode='w')
 # write fe polygons with associated ccod info to geojson
-polygon_ccod_defra.to_file(polygon_ccod_defra_path, driver='GeoJSON')
 
 # COMMAND ----------
 
@@ -86,8 +120,6 @@ polygon_ccod_defra_buffered['geometry'] = polygon_ccod_defra_buffered.geometry.b
 
 # COMMAND ----------
 
-# join polygon dataset with unfiltered ccod data - need this to look at adjascent polyogon info etc.
-polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', right_on='Title Number')
 # spatial join buffered defra polygons with unfiltered polygon-ccod data
 national_polygon_bordering_defra_properties = polygon_ccod.sjoin(polygon_ccod_defra_buffered, how='inner', lsuffix='_all', rsuffix='_defra')
 # display attributes for overlapping polygons for visual inspection

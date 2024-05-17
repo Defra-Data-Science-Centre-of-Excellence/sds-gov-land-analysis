@@ -10,6 +10,16 @@ from thefuzz import process
 
 # COMMAND ----------
 
+string_to_check = ['Department', 'for', 'enviroment']
+string_to_find = 'Environment'
+process.extractOne(string_to_find, string_to_check)
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
 #set file paths
 ccod_path = '/dbfs/mnt/lab/restricted/ESD-Project/source_data_gov_hm_land_registry/dataset_use_land_and_property_data/format_CSV_use_land_and_property_data/LATEST_use_land_and_property_data/CCOD_FULL_2024_01.csv'
 
