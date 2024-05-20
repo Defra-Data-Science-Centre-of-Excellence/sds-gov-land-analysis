@@ -1,18 +1,34 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC #### Set up
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Install/import required packages
+
+# COMMAND ----------
+
 # MAGIC %sh
 # MAGIC pip install thefuzz
 
 # COMMAND ----------
 
 import pandas as pd
+import numpy as np
 from thefuzz import fuzz
 from thefuzz import process
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##### Define functions
+
+# COMMAND ----------
+
 def get_fuzzy_match_max_score(string_to_search, match_options):
   '''
-  
+  Don't think this one is used
   '''
   best_match_scores = list()
   for match_option in match_options:
@@ -22,9 +38,17 @@ def get_fuzzy_match_max_score(string_to_search, match_options):
 
 # COMMAND ----------
 
-def get_fuzzy_match_min_score(string_to_search, match_options):
+def get_fuzzy_match_min_score(string_to_search: str, match_options: list):
   '''
-  
+  Finds the best match and best match score for all match options in the search string,
+  then returns the lowest best match score of all of these.
+
+  Parameters:
+    string_to_search (str): string to search and identify best matches from
+    match_options (list): list of match options which need to be identified in the string_to_search
+
+  Returns:
+    minimum score of all the best match scores
   '''
   best_match_scores = list()
   for match_option in match_options:
@@ -35,12 +59,17 @@ def get_fuzzy_match_min_score(string_to_search, match_options):
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #######Set file paths
+# MAGIC #### Set file paths
 
 # COMMAND ----------
 
 # MAGIC %run
 # MAGIC ./paths
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Import CCOD data
 
 # COMMAND ----------
 
@@ -72,10 +101,18 @@ ccod.head()
 
 # COMMAND ----------
 
-# exploring the ccod data
-ccod_wo_registration_no = ccod[ccod['Company Registration No. (1)'].isna()]
-ccod_proprietor_categories = ccod['Proprietorship Category (1)'].unique()
-ccod_proprietor_categories
+# MAGIC %md
+# MAGIC
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Get DEFRA titles
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Find potential Defra proprietor names (not typo resilient)
 
 # COMMAND ----------
 
@@ -85,7 +122,8 @@ cs_department_identifiers = ['state', 'secretary', 'ministry', 'minister', 'depa
 # department specific identifiers
 all_cs_department_name_identifiers = ['environment','food','rural', 'agriculture']
 
-# This method produces too many outputs, as the search parameters become too wide
+# This method produces too many outputs, as the search parameters become too wide, but could be more useful for other departments
+
 #cs_department_names = {
 #    'Department for Environment, Food and Rural Affairs':
 #        ['environment', 'food', 'rural'],
@@ -101,7 +139,6 @@ all_cs_department_name_identifiers = ['environment','food','rural', 'agriculture
 
 # COMMAND ----------
 
-import numpy as np
 # find some defra data for reference using or-and-or method
 ccod_filtered = ccod.loc[ccod['Proprietor Name (1)'].str.contains('|'.join(cs_department_identifiers), case=False, na=False)]
 ccod_filtered = ccod_filtered.loc[ccod_filtered['Proprietor Name (1)'].str.contains('|'.join(all_cs_department_name_identifiers), case=False, na=False)]
@@ -111,7 +148,7 @@ defra_names = ccod_filtered['Proprietor Name (1)'].unique()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Inspect identified defra names and remove wrong'uns
+# MAGIC ##### Inspect identified potential defra names and spurious names
 
 # COMMAND ----------
 
@@ -154,6 +191,7 @@ cs_department_found_name_translation_dict = {}
 
 # COMMAND ----------
 
+# Last run took 8 hours - this is really long - recommend removing as many versions of the defra names above which have typos as possible, to reduce run-time. Defra names with typos should be re-idnetified by the script below anyway. This can be checked.
 # Using name list produced, identify if theres are further potential names which contain typos
 for defra_name in defra_names_df[0].tolist():
     if defra_name != '':
@@ -605,6 +643,11 @@ defra_names = defra_found_names
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##### Populate current organsition field (new) for records with identified Defra proprietor names
+
+# COMMAND ----------
+
 # Populate new 'Current Organsiation' field with Department name
 for name in defra_names:
     ccod.loc[ccod['Proprietor Name (1)'] == name, 'current_organisation'] = 'Department for Environment, Food and Rural Affairs'
@@ -616,66 +659,6 @@ display(ccod)
 # COMMAND ----------
 
 display(ccod[ccod['current_organisation'].notnull()])
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Comparison to Piumi's work
-
-# COMMAND ----------
-
-# bring in defra name list created previously
-previous_defra_names = pd.DataFrame(['the secretary of state for environment food and rural affairs',
-       'secretary of state for environment food and rural affairs',
-       'the secretary of state for environment, food and rural affairs',
-       'secretary of state for environment food and rural  affairs',
-       'the secretary of state for  environment food and rural affairs',
-       'the secretary of state for the environment, food and rural affairs',
-       'the secretary of state for the environment food and rural affairs',
-       'the secretary of state for the department for environment, food and rural affairs',
-       'secretary of state for environment  food and rural affairs',
-       'the secretary of state for the department of the environment, food and rural affairs',
-       'the secretary of state for the environment food & rural affairs',
-       'secretary of state for the environment food and rural affairs',
-       'secretary of state for environment food and rural',
-       'the secretary of state for the department of the environment food and rural affairs',
-       'the secretary of state for the department of the environment, food and rural affairs (defra)',
-       'secretary  of state for environment food and rural affairs',
-       'secretary of state for environment, food and rural affairs',
-       'the secretary of state for the department of the environment for food and rural affairs',
-       'secretary of state for  environment food and rural affairs',
-       'secretary of state  for environment food and rural affairs',
-       'the secretary of state for food environment and rural affairs',
-       'secretary of  state for environment food and rural affairs',
-       'secretary  of state for environment food and rural  affairs',
-       'secretary of state for environment fisheries and food',
-       'the secretary of state for the environment',
-       'the secretary of state for the environment transport and the regions',
-       'the secretary of state for the environment, transport and the regions',
-       'secretary of state for the environment',
-       'secretary of state for the environment, transport and the regions',
-       'the secretary of state for environment',
-       'secretary of state for the environment transport and the regions',
-       'the secretary of state for the environment and the regions',
-       'the secretary of state of the environment',
-       'secretary of state for the environment transport and the regions>'], 
-       columns=['lowercase_name']
-       )
-
-display(previous_defra_names)
-
-# COMMAND ----------
-
-# Make new name list lower case to enable comparison
-defra_names_for_comparison = pd.DataFrame(defra_names, columns=['raw_name'])
-defra_names_for_comparison['lowercase_name_new'] = defra_names_for_comparison['raw_name'].str.lower()
-display(defra_names_for_comparison)
-
-# COMMAND ----------
-
-# join on lowercase name col
-previous_current_defra_names_comparison = defra_names_for_comparison.merge(previous_defra_names, how='outer', left_on='lowercase_name_new', right_on='lowercase_name')
-display(previous_current_defra_names_comparison)
 
 # COMMAND ----------
 
@@ -932,7 +915,7 @@ print(alb_found_names_translation_dict)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Add current and name instance columns to ccod data using QA'ed translation dict
+# MAGIC ##### Populate current and historic organsition fields (new) for records with identified ALB proprietor names
 
 # COMMAND ----------
 
@@ -946,6 +929,11 @@ for current_org_name, org_names in alb_found_names_translation_dict.items():
 # COMMAND ----------
 
 display(ccod)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Export titles of interest to csv
 
 # COMMAND ----------
 

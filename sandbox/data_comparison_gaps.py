@@ -1,4 +1,9 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC #### Setup
+
+# COMMAND ----------
+
 # import packages
 import geopandas as gpd
 import pandas as pd
@@ -16,7 +21,27 @@ pd.options.display.float_format = '{:.2f}'.format
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Read in whole NPS-CCOD dataset
+# MAGIC ##### Define functions
+
+# COMMAND ----------
+
+def output_gap_attributes_from_nps_ccod(polygon_gaps, output_path):
+    '''
+    Gets attribute information from ccod-nps data for polygons layer passed to it. Use to get information in gaps in the identified ccod_polygon of interest layer.
+    
+    Parameters:
+        polygon_gaps (GeoDataFrame): polyon layer for which ccod info is needed
+        output_path (str): filepath to save the output polyon layer (with added ccod info) to
+    '''
+    # get nps-ccod records overlapping with fe polygons
+    overlap_polygon_gaps_polygon_ccod = gpd.sjoin(polygon_gaps, polygon_ccod, how='left', lsuffix='_fe', rsuffix='_ccod')
+    # write fe polygons with associated ccod info to geojson
+    overlap_polygon_gaps_polygon_ccod.to_file(output_path, driver='GeoJSON')
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Read in NPS-CCOD dataset
 
 # COMMAND ----------
 
@@ -40,13 +65,21 @@ ccod = pd.read_csv(
 
 # COMMAND ----------
 
-# import unfiltered national polygon dataset
+# import unfiltered national polygon dataset - usually takes about an hour - faster if parquet?
 national_polygon_dfs = []
 for national_polygon_path in national_polygon_paths:
     national_polygon_df = gpd.read_file(national_polygon_path)#, where = f'TITLE_NO IN {title_numbers_of_interest_sql_string}')
     national_polygon_dfs.append(national_polygon_df)
     print(f'loaded into dataframe: {national_polygon_path}')
 national_polygon = pd.concat(national_polygon_dfs, ignore_index=True)
+
+# COMMAND ----------
+
+national_polygon.to_parquet(national_polygon_parquet_path)
+
+# COMMAND ----------
+
+national_polygon_paquet_test = pd.read_parquet(national_polygon_parquet_path)
 
 # COMMAND ----------
 
@@ -60,29 +93,18 @@ polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', rig
 
 # COMMAND ----------
 
-def output_gap_attributes_from_nps_ccod(polygon_gaps, output_path):
-    '''
-    Gets attribute information from ccod-nps data for polygons layer passed to it. Use to get information in gaps in the identified ccod_polygon of interest layer.
-    
-    Parameters:
-        polygon_gaps (GeoDataFrame): polyon layer for which ccod info is needed
-        output_path (str): filepath to save the output polyon layer (with added ccod info) to
-    '''
-    # get nps-ccod records overlapping with fe polygons
-    overlap_polygon_gaps_polygon_ccod = gpd.sjoin(polygon_gaps, polygon_ccod, how='left', lsuffix='_fe', rsuffix='_ccod')
-    # write fe polygons with associated ccod info to geojson
-    overlap_polygon_gaps_polygon_ccod.to_file(output_path, driver='GeoJSON')
-
-# COMMAND ----------
-
 # MAGIC %md
-# MAGIC FE
+# MAGIC #### Get ccod info for FE gaps
 
 # COMMAND ----------
 
 # get info for fe gaps
-hmlr_fe_gaps = gpd.read_file(fc_polygons_not_overlapping_potential_fc_polygon_ccod_path)
+hmlr_fe_gaps = gpd.read_file(fc_polygons_not_overlapping_potential_fc_polygon_ccod_buffered_path)
 
+
+# COMMAND ----------
+
+hmlr_fe_gaps.area.sum()
 
 # COMMAND ----------
 
@@ -96,12 +118,16 @@ output_gap_attributes_from_nps_ccod(hmlr_fe_gaps_shrunk, hmlr_fe_buffer_minus05_
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC EPIMS
+# MAGIC #### Get CCOD info for EPIMS gaps
 
 # COMMAND ----------
 
 # get into for gaps identified by epims
 hmlr_epims_gaps = gpd.read_file(epims_with_no_overlapping_polygon_ccod_defra_path)
+
+# COMMAND ----------
+
+hmlr_epims_gaps
 
 # COMMAND ----------
 
@@ -120,6 +146,11 @@ output_gap_attributes_from_nps_ccod(hmlr_epims_gaps_shrunk, hmlr_epims_buffer_mi
 
 # MAGIC %md
 # MAGIC #### Investigate found data for gaps
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC FE
 
 # COMMAND ----------
 
@@ -142,6 +173,11 @@ hmlr_fe_gap_info_by_organisation.to_file(hmlr_fe_gap_info_by_organisation_path, 
 
 hmlr_fe_gap_info_by_organisation_df = hmlr_fe_gap_info_by_organisation.drop(columns=['geometry']).reset_index()
 display(hmlr_fe_gap_info_by_organisation_df.sort_values(by='area', ascending=False))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC EPIMS
 
 # COMMAND ----------
 
