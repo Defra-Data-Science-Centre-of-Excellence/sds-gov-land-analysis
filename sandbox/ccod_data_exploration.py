@@ -101,6 +101,10 @@ ccod.head()
 
 # COMMAND ----------
 
+ccod[ccod['Title Number']=='YEA71965']
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC
 
@@ -925,6 +929,10 @@ for current_org_name, org_names in alb_found_names_translation_dict.items():
             for found_name in found_names:
                 ccod.loc[ccod['Proprietor Name (1)'] == found_name, 'current_organisation'] = current_org_name
                 ccod.loc[ccod['Proprietor Name (1)'] == found_name, 'historic_organisation'] = org_name
+
+# COMMAND ----------
+
+ccod[ccod['Title Number']=='YEA71965']
 
 # COMMAND ----------
 

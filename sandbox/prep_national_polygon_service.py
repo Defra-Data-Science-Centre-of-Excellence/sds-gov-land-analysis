@@ -36,19 +36,16 @@ ccod = pd.read_csv(
 
 # COMMAND ----------
 
-# import unfiltered national polygon dataset
-national_polygon_dfs = []
-for national_polygon_path in national_polygon_paths:
-    national_polygon_df = gpd.read_file(national_polygon_path)#, where = f'TITLE_NO IN {title_numbers_of_interest_sql_string}')
-    national_polygon_dfs.append(national_polygon_df)
-    print(f'loaded into dataframe: {national_polygon_path}')
-national_polygon = pd.concat(national_polygon_dfs, ignore_index=True)
-
+national_polygon = gpd.read_parquet(national_polygon_parquet_path)
 
 # COMMAND ----------
 
 # join polygon dataset with unfiltered ccod data - need this to look at adjascent polyogon info etc.
 polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', right_on='Title Number')
+
+# COMMAND ----------
+
+polygon_ccod.to_parquet(polygon_ccod_path)
 
 # COMMAND ----------
 
@@ -70,7 +67,7 @@ study_area_nps.to_parquet('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Get identified DEFRA polygons
+# MAGIC #### Get identified DEFRA polygons
 
 # COMMAND ----------
 
@@ -79,13 +76,7 @@ ccod_defra = pd.read_csv(ccod_defra_and_alb_path, sep = ',')
 
 # COMMAND ----------
 
-# Create sql statement to select for defra associated title numbers
-title_numbers_of_interest = ccod_defra['Title Number'].unique()
-title_numbers_of_interest_sql_string = ''
-for title_number in title_numbers_of_interest:
-    title_numbers_of_interest_sql_string = f"{title_numbers_of_interest_sql_string}'{title_number}', "
-title_numbers_of_interest_sql_string = title_numbers_of_interest_sql_string.rstrip(', ')
-title_numbers_of_interest_sql_string = f'({title_numbers_of_interest_sql_string})'
+ccod_defra
 
 # COMMAND ----------
 

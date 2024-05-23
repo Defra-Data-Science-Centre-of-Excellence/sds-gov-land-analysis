@@ -8,6 +8,7 @@ study_area_directory_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliot
 
 # COMMAND ----------
 
+# raw inputs
 ccod_path = '/dbfs/mnt/lab/restricted/ESD-Project/source_data_gov_hm_land_registry/dataset_use_land_and_property_data/format_CSV_use_land_and_property_data/LATEST_use_land_and_property_data/CCOD_FULL_2024_01.csv'
 national_polygon_paths = [
     '/dbfs/mnt/base/restricted/source_data_gov_hm_land_registry/dataset_nps_national_polygon/format_SHP_nps_national_polygon/LATEST_nps_national_polygon/LR_POLY_FULL_MAY_2024_0.shp',
@@ -22,7 +23,9 @@ national_polygon_paths = [
     '/dbfs/mnt/base/restricted/source_data_gov_hm_land_registry/dataset_nps_national_polygon/format_SHP_nps_national_polygon/LATEST_nps_national_polygon/LR_POLY_FULL_MAY_2024_9.shp',
 ]
 
+# created inputs
 national_polygon_parquet_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/national_polygon_dataset.parquet'
+polygon_ccod_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/polygon_ccod.parquet'
 
 # COMMAND ----------
 
@@ -31,12 +34,12 @@ national_polygon_parquet_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.el
 
 # COMMAND ----------
 
-ccod_defra_and_alb_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/ccod_of_interest_defra_and_albs_tr_and_extra_columns.csv"
+ccod_defra_and_alb_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/ccod_of_interest_defra_and_albs_typo_resilient.csv"
 
 # COMMAND ----------
 
-ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/ccod_defra.csv'
-polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/nps_outputs/polygon_ccod_defra.geojson'
+ccod_defra_path = ""
+polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/nps_outputs/polygon_ccod_defra_2.geojson'
 
 # COMMAND ----------
 
@@ -86,11 +89,14 @@ fe_registrations_polygons_path = '/dbfs/FileStore/jazzelliott/Registrations.gdb'
 
 # COMMAND ----------
 
-epims_defra_polygon_ccod_comparison_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/comparison_outputs/epims_defra_polygon_ccod_comparison.geojson'
+#epims_defra_polygon_ccod_comparison_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/comparison_outputs/epims_defra_polygon_ccod_comparison.geojson'
 epims_defra_with_no_overlapping_polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/comparison_outputs/epims_defra_with_no_overlapping_polygon_ccod_defra.geojson'
 polygon_ccod_defra_with_no_overlapping_epims_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/comparison_outputs/polygon_ccod_defra_with_no_overlapping_epims_defra.geojson'
-epims_with_no_overlapping_polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/comparison_outputs/epims_with_no_overlapping_polygon_ccod_defra.geojson'
-polygon_ccod_defra_with_no_overlapping_epims_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/comparison_outputs/polygon_ccod_defra_with_no_overlapping_epims.geojson'
+
+epims_with_no_overlapping_polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/comparison_outputs/epims_with_no_overlapping_polygon_ccod_defra_2.geojson'
+polygon_ccod_defra_with_no_overlapping_epims_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/comparison_outputs/polygon_ccod_defra_with_no_overlapping_epims_2.geojson'
+
+undissolved_epims_with_no_overlapping_polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/comparison_outputs/undissolved_epims_with_no_overlapping_polygon_ccod_defra_2.parquet'
 
 hmlr_epims_gaps_ccod_info_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/comparison_outputs/hmlr_epims_gaps_ccod_info.geojson'
 

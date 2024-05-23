@@ -1,4 +1,9 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC #### Setup
+
+# COMMAND ----------
+
 import geopandas as gpd
 import pandas as pd
 
@@ -11,6 +16,11 @@ pd.options.display.float_format = '{:.2f}'.format
 
 # MAGIC %run
 # MAGIC ./paths
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Prepare emips data
 
 # COMMAND ----------
 
@@ -41,6 +51,11 @@ display(invalid_epims)
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC #### Prepare identified defra polygon-ccod data
+
+# COMMAND ----------
+
 # Read in defra polygon dataset created from HMLR data 
 polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
 polygon_ccod_defra = polygon_ccod_defra.explode()
@@ -53,6 +68,16 @@ polygon_ccod_defra['df'] = 'polygon_ccod_defra'
 polygon_ccod_defra['geometry'] = polygon_ccod_defra.make_valid()
 invalid_polygon_ccod_defra = polygon_ccod_defra.loc[~polygon_ccod_defra.geometry.is_valid]
 display(invalid_polygon_ccod_defra)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Compare defra polygon-ccod and epims
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Dissolved
 
 # COMMAND ----------
 
@@ -74,9 +99,18 @@ difference_dissolved_epims_polygon_ccod_defra['df'].update({0: 'polygon_ccod_def
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##### Undissolved
+
+# COMMAND ----------
+
 # Comparison of undissolved datasets
 polygon_ccod_defra_with_no_overlapping_epims_undissolved = polygon_ccod_defra.overlay(epims, how='difference', keep_geom_type=False, make_valid=True)
 epims_with_no_overlapping_polygon_ccod_defra_undissolved = epims.overlay(polygon_ccod_defra, how='difference', keep_geom_type=False, make_valid=True)
+
+# COMMAND ----------
+
+epims_with_no_overlapping_polygon_ccod_defra_undissolved.to_parquet(undissolved_epims_with_no_overlapping_polygon_ccod_defra_path)
 
 # COMMAND ----------
 
