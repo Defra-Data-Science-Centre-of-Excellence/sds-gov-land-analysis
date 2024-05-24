@@ -31,11 +31,15 @@ ccod = pd.read_csv(
         "Proprietorship Category (1)",
         "Proprietor (1) Address (1)",
         "Date Proprietor Added",
-        "Additional Proprietor Indicator"
+        "Additional Proprietor Indicator",
+        "Proprietor Name (2)",
+        "Proprietor Name (3)",
+        "Proprietor Name (4)"
         ]
 )
 
-ccod_of_interest = pd.read_csv("/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/ccod_of_interest.csv")
+# import ccod filtered for defra data
+ccod_of_interest = pd.read_csv(ccod_defra_and_alb_path, sep = ',')
 
 # COMMAND ----------
 
@@ -61,7 +65,7 @@ display(ea_titles)
 # COMMAND ----------
 
 # Get ea records from ccod data selected by my methods
-ea_ccod = ccod_of_interest[ccod_of_interest['Current_organisation'] == 'Environment Agency']
+ea_ccod = ccod_of_interest[ccod_of_interest['current_organisation'] == 'Environment Agency']
 
 # COMMAND ----------
 
@@ -79,6 +83,11 @@ display(unidentified_ea_titles_ccod)
 # COMMAND ----------
 
 display(unidentified_ea_titles_ccod['Proprietor Name (1)_unfiltered_ccod'].value_counts())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Need to get the area of these?
 
 # COMMAND ----------
 
@@ -108,7 +117,7 @@ display(ne_titles)
 # COMMAND ----------
 
 # Get ne records from ccod data selected by my methods
-ne_ccod = ccod_of_interest[ccod_of_interest['Current_organisation'] == 'Natural England']
+ne_ccod = ccod_of_interest[ccod_of_interest['current_organisation'] == 'Natural England']
 
 # COMMAND ----------
 
@@ -157,11 +166,11 @@ print(len(defra_proposed_title_numbers))
 
 # COMMAND ----------
 
-fc_defra_ccod = ccod_of_interest[ccod_of_interest['Current_organisation'].isin(['Forestry Commission', 'Department for Environment, Food and Rural Affairs'])]
+fc_defra_ccod = ccod_of_interest[ccod_of_interest['current_organisation'].isin(['Forestry Commission', 'Department for Environment, Food and Rural Affairs'])]
 
 # COMMAND ----------
 
-fc_ccod = ccod_of_interest[ccod_of_interest['Current_organisation'] == 'Forestry Commission']
+fc_ccod = ccod_of_interest[ccod_of_interest['current_organisation'] == 'Forestry Commission']
 display(fc_ccod)
 
 # COMMAND ----------
@@ -173,6 +182,11 @@ potential_fc_polygon_ccod = polygon_ccod_defra[polygon_ccod_defra['current_organ
 # create buffered version to manage edge effects (FC data seems to have excess boundary a lot of the time)
 potential_fc_polygon_ccod_buffered = potential_fc_polygon_ccod
 potential_fc_polygon_ccod_buffered.geometry = potential_fc_polygon_ccod_buffered.geometry.buffer(20)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Could this be done better by just re-removing tilte numbers after sjoin?
 
 # COMMAND ----------
 
