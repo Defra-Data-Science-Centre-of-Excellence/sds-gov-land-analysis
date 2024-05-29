@@ -19,6 +19,16 @@ pd.options.display.float_format = '{:.2f}'.format
 
 # COMMAND ----------
 
+# MAGIC %run
+# MAGIC ./constants
+
+# COMMAND ----------
+
+alb_found_names_translation_dict.update({'Department for Environment, Food and Rural Affairs': None})
+organisations_of_interest = alb_found_names_translation_dict.keys()
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC #### Prepare emips data
 
@@ -48,6 +58,68 @@ epims['df'] = 'epims'
 epims['geometry'] = epims.make_valid()
 invalid_epims = epims.loc[~epims.geometry.is_valid]
 display(invalid_epims)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Translate PropertyCentre to standard DEFRA organsiation name
+
+# COMMAND ----------
+
+
+epims['PropertyCentre'].unique()
+
+# COMMAND ----------
+
+organisation_translation_dict = {
+       'DEFRA - ENVIRONMENT AGENCY - CORPORATE ESTATE':'Environment Agency',
+       'DEFRA - ENVIRONMENT AGENCY - FUNCTIONAL ESTATE': 'Environment Agency',
+       'DEFRA - DEPARTMENT FOR ENVIRONMENT, FOOD AND RURAL AFFAIRS - SPECIALIST ESTATE': 'Department for Environment, Food and Rural Affairs',
+       'DEFRA - DEPARTMENT FOR ENVIRONMENT, FOOD AND RURAL AFFAIRS - CORPORATE ESTATE': 'Department for Environment, Food and Rural Affairs',
+       'DEFRA - NATURAL ENGLAND': 'Natural England',
+       'DEFRA - NATIONAL FOREST COMPANY OPERATIONAL': 'National Forest Company',
+       'DEFRA - ROYAL BOTANIC GARDENS KEW': 'Royal Botanic Gardens Kew',
+       'DEFRA - AGRICULTURE & HORTICULTURE DEVELOPMENT BOARD': 'Agriculture and Horticulture Development Board',
+       'DEFRA - SEA FISH INDUSTRY AUTHORITY':'Seafish'}
+
+# COMMAND ----------
+
+# add new organtisation column which can be matched to current organisation field in polygon-ccod data
+epims['organisation'] = epims['PropertyCentre']
+epims['organisation'] = epims['organisation'].map(organisation_translation_dict)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Summarise epims data
+
+# COMMAND ----------
+
+area_df = pd.DataFrame(columns=['organisation', 'total_area', 'land_area', 'land_buildings_area', 'overlap_freehold_leasehold'])
+#For each organisation of interest
+for organisation in organisations_of_interest:
+    organisation_polygon_ccod = epims[epims['organisation'] == organisation]
+    # get total area
+    organisation_polygon_ccod.geometry = organisation_polygon_ccod.geometry.make_valid()
+    total_area = organisation_polygon_ccod.dissolve().area.sum()
+    #dissolve by freehold/leasehold
+    holding_dissolved_polygon_ccod = organisation_polygon_ccod.dissolve(by='HoldingTypeDescription', as_index=False)
+    land = holding_dissolved_polygon_ccod[holding_dissolved_polygon_ccod['HoldingTypeDescription'] == 'Land Only']
+    land_area = land.area.sum()
+    land_buildings = holding_dissolved_polygon_ccod[holding_dissolved_polygon_ccod['HoldingTypeDescription'] == 'Land & Buildings']
+    land_buildings_area = land_buildings.area.sum()
+    # sense check that freehold and leasehold add to total area
+    #if land_area + land_buildings_area != total_area:
+    #print(f'Sense check: freehold area ({freehold_area}) and leasehold area ({leasehold_area}) do not add to total area ({total_area})')
+    #sense_check = f'Difference of: {total_area - freehold_area - leasehold_area}'
+    #else:
+    #    sense_check = 0
+    overlap_land_land_buildings = gpd.overlay(land, land_buildings, how='intersection', make_valid=True)
+    overlap_land_land_buildings_area = overlap_land_land_buildings.area.sum()
+    # add values to dataframe
+    df_row = pd.DataFrame(data={'organisation': organisation, 'total_area': total_area, 'land_area': land_area, 'land_buildings_area': land_buildings_area, 'overlap_land_land_buildings_leasehold': overlap_land_land_buildings_area}, index=[0])
+    area_df = pd.concat([area_df, df_row], ignore_index=True)
+display(area_df)
 
 # COMMAND ----------
 
@@ -117,7 +189,12 @@ epims_with_no_overlapping_polygon_ccod_defra_undissolved.to_parquet(undissolved_
 # get count of polygons present in epims but not hmlr derrived data
 epims_with_no_overlapping_polygon_ccod_defra_undissolved['PropertyCentre'].value_counts()
 #Dissolve on property centre and get total area for each 
-epims_with_no_overlapping_polygon_ccod_defra_by_organisation = epims_with_no_overlapping_polygon_ccod_defra_undissolved.dissolve(by='PropertyCentre')
+epims_with_no_overlapping_polygon_ccod_defra_by_propertycentre = epims_with_no_overlapping_polygon_ccod_defra_undissolved.dissolve(by='PropertyCentre')
+epims_with_no_overlapping_polygon_ccod_defra_by_propertycentre['area_m2'] = epims_with_no_overlapping_polygon_ccod_defra_by_propertycentre.area
+display(epims_with_no_overlapping_polygon_ccod_defra_by_propertycentre)
+
+# Dissolve on translated organisation field and get total area for each 
+epims_with_no_overlapping_polygon_ccod_defra_by_organisation = epims_with_no_overlapping_polygon_ccod_defra_undissolved.dissolve(by='organisation')
 epims_with_no_overlapping_polygon_ccod_defra_by_organisation['area_m2'] = epims_with_no_overlapping_polygon_ccod_defra_by_organisation.area
 display(epims_with_no_overlapping_polygon_ccod_defra_by_organisation)
 

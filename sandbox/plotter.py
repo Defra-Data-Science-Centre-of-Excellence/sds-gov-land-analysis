@@ -1,5 +1,6 @@
 # Databricks notebook source
 import geopandas as gpd
+import matplotlib
 
 # COMMAND ----------
 
@@ -17,3 +18,7 @@ data.to_file('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/
 # COMMAND ----------
 
 data.explore()
+
+# COMMAND ----------
+
+all_defra_land = gpd.read_file(polygon_ccod_defra_path)
