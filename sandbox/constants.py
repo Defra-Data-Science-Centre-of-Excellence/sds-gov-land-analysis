@@ -52,6 +52,7 @@ alb_found_names_translation_dict = {
         'Forestry Commission': [],
         'Forestry England': [],
         'Forestry Research': [],
+        'Forest Enterprise': [],
     },
     'The Water Services Regulation Authority':{
         'The Water Services Regulation Authority': [],

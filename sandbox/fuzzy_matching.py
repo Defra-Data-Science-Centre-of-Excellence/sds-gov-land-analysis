@@ -10,8 +10,8 @@ from thefuzz import process
 
 # COMMAND ----------
 
-string_to_check = ['Department', 'for', 'enviroment']
-string_to_find = 'Environment'
+string_to_check = 'SECRETRY OF STATE FOR ENVIMOMENT'.split()
+string_to_find = 'SECRETARY'
 process.extractOne(string_to_find, string_to_check)
 
 # COMMAND ----------

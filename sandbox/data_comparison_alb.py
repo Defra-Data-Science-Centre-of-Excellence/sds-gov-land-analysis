@@ -48,6 +48,11 @@ polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
 
 # COMMAND ----------
 
+# unfilitered polygon ccod data
+polygon_ccod = gpd.read_parquet(polygon_ccod_path)
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC #### Comparison to Piumi's work
 
@@ -65,24 +70,44 @@ display(ea_titles)
 # COMMAND ----------
 
 # Get ea records from ccod data selected by my methods
-ea_ccod = ccod_of_interest[ccod_of_interest['current_organisation'] == 'Environment Agency']
+ea_ccod = polygon_ccod_defra[polygon_ccod_defra['current_organisation'] == 'Environment Agency']
 
 # COMMAND ----------
 
 # join selected ea ccod data to ea title list (on title number) to enable comparison
 ea_ccod_and_supplied_titles = ea_ccod.merge(ea_titles, how='outer', left_on='Title Number', right_on='Title', suffixes=('_filtered_ccod','_ea'))
-display(ea_ccod_and_supplied_titles)
 
 # COMMAND ----------
 
 # Find ea titles which have not been identified by my script, by selecting for null Title Number (from selected ea ccod table) field. Then join to unfiltered ccod data to get attribute info.
 unidentified_ea_titles = ea_ccod_and_supplied_titles[ea_ccod_and_supplied_titles['Title Number'].isna()]
-unidentified_ea_titles_ccod = ccod.merge(unidentified_ea_titles, how='inner', left_on='Title Number', right_on='Title', suffixes=('_unfiltered_ccod','_comparison_table'))
-display(unidentified_ea_titles_ccod)
+unidentified_ea_titles_ccod = ccod.merge(unidentified_ea_titles, how='right', left_on='Title Number', right_on='Title', suffixes=('_unfiltered_ccod','_comparison_table'))
+unidentified_ea_titles_ccod
 
 # COMMAND ----------
 
-display(unidentified_ea_titles_ccod['Proprietor Name (1)_unfiltered_ccod'].value_counts())
+# to get an area for this discrepancy we need to use the unfiltered polygon_ccod data for geometries
+unidentified_ea_titles_ccod_geometries = polygon_ccod.merge(unidentified_ea_titles, how='right', left_on='Title Number', right_on='Title', suffixes=('_unfiltered_polygon_ccod','_comparison_table'))
+unidentified_geometries = unidentified_ea_titles_ccod_geometries[unidentified_ea_titles_ccod_geometries['geometry_unfiltered_polygon_ccod'].notnull()]
+unidentified_geometries = gpd.GeoDataFrame(unidentified_geometries, geometry=unidentified_geometries['geometry_unfiltered_polygon_ccod'])
+# print the number of titles just to check they're all pulling through
+print(f"Number of unidientified titles associated with records in HMLR National Polygon dataset: {len(unidentified_geometries['TITLE_NO_unfiltered_polygon_ccod'].unique())}")
+# print the area (needs to be of dissolved geometries)
+unidentified_geometries_area = unidentified_geometries.dissolve().area.sum()
+print(f'Unidentified area associated with these titles: {unidentified_geometries_area/10000} hectares')
+
+# COMMAND ----------
+
+# get proprietor name list and count of associated titles from ccod data - only 178, which leaves 50 titles which must be null in ccod
+display(pd.DataFrame(unidentified_ea_titles_ccod['Proprietor Name (1)_unfiltered_ccod'].value_counts()).reset_index())
+
+# COMMAND ----------
+
+# lots of records from UNITED UTILITIES WATER LIMITED in the EA list, let's have a look at UNITED UTILIIES WATER LIMITED in the unfilitered ccod dataset and see if they have any more titles
+uuwl_ccod = ccod[ccod['Proprietor Name (1)'] == 'UNITED UTILITIES WATER LIMITED']
+display(uuwl_ccod)
+# Lots of records under UUWL not identified as EA. No differnetiation of these by proprietor name, is there any differentiation by address?
+uuwl_ccod['Proprietor (1) Address (1)'].unique()
 
 # COMMAND ----------
 
@@ -91,20 +116,38 @@ display(unidentified_ea_titles_ccod['Proprietor Name (1)_unfiltered_ccod'].value
 
 # COMMAND ----------
 
-# Find in ccod ea titles which have been identified by my script, but aren't in list from ea. Don't need to join back to unfiltered ccod data here as it should already be present from filtered ccod data.
-extra_identified_ea_titles = ea_ccod_and_supplied_titles[ea_ccod_and_supplied_titles['Title'].isna()]
-# Remove leasehold as the EA only provided Freehold titles in their list
-extra_identified_ea_titles = extra_identified_ea_titles[extra_identified_ea_titles['Tenure_filtered_ccod']=='Freehold']
-display(extra_identified_ea_titles)
+ea = polygon_ccod_defra[polygon_ccod_defra['current_organisation']=='Environment Agency']
+ea_leasehold = ea[ea['Tenure']=='Leasehold']
+ea_leasehold
 
 # COMMAND ----------
 
-display(extra_identified_ea_titles['Proprietor Name (1)'].value_counts())
+# Find in ccod ea titles which have been identified by my script, but aren't in list from ea. Don't need to join back to unfiltered ccod data here as it should already be present from filtered ccod data.
+extra_identified_ea_titles = ea_ccod_and_supplied_titles[ea_ccod_and_supplied_titles['Title'].isna()]
+# Remove leasehold as the EA only provided Freehold titles in their list
+extra_identified_ea_freehold_titles = extra_identified_ea_titles[extra_identified_ea_titles['Tenure_filtered_ccod']=='Freehold']
+#display(extra_identified_ea_titles)
+extra_identified_ea_freehold_titles = extra_identified_ea_freehold_titles.dissolve(by='TITLE_NO')
+display(pd.DataFrame(extra_identified_ea_freehold_titles['Proprietor Name (1)'].value_counts()).reset_index())
+extra_identified_ea_titles_area = extra_identified_ea_freehold_titles.dissolve().area.sum()/10000
+print(f'Area identified in EA land parcel dataset not identified by EA freehold title list: {extra_identified_ea_titles_area} hectares')
+
+# let's get the leasehold area as well just for reference
+extra_identified_ea_leasehold_titles = extra_identified_ea_titles[extra_identified_ea_titles['Tenure_filtered_ccod']=='Leasehold']
+extra_identified_ea_leasehold__titles = extra_identified_ea_leasehold_titles.dissolve(by='TITLE_NO')
+display(pd.DataFrame(extra_identified_ea_leasehold_titles['Proprietor Name (1)'].value_counts()).reset_index())
+extra_identified_ea_leasehold_titles_area = extra_identified_ea_leasehold_titles.dissolve().area.sum()/10000
+print(f'Leasehold area identified in EA land parcel dataset not identified by EA freehold title list: {extra_identified_ea_leasehold_titles_area} hectares')
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC #### NE Data Comparison
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Import data
 
 # COMMAND ----------
 
@@ -116,34 +159,88 @@ display(ne_titles)
 
 # COMMAND ----------
 
+# import ne ownership polygons
+ne_ownership_polygons = gpd.read_file(ne_title_polygons_path)
+
+# COMMAND ----------
+
 # Get ne records from ccod data selected by my methods
-ne_ccod = ccod_of_interest[ccod_of_interest['current_organisation'] == 'Natural England']
+ne_ccod = polygon_ccod_defra[polygon_ccod_defra['current_organisation'] == 'Natural England']
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Comparison to title list
 
 # COMMAND ----------
 
 # join selected ne ccod data to ne title list (on title number) to enable comparison
 ne_ccod_and_supplied_titles = ne_ccod.merge(ne_titles, how='outer', left_on='Title Number', right_on='Title')
-display(ne_ccod_and_supplied_titles)
+
+# COMMAND ----------
+
+ccod_of_interest[ccod_of_interest['Title Number'] == 'ESX299765']
+
+# COMMAND ----------
+
+polygon_ccod[polygon_ccod['Title Number'] == 'SL271832']
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ###### Get titles not identified
 
 # COMMAND ----------
 
 # Find ne titles which have not been identified by my script, by selecting for null Title Number (from selected ne ccod table) field. Then join to unfiltered ccod data to get attribute info.
 unidentified_ne_titles = ne_ccod_and_supplied_titles[ne_ccod_and_supplied_titles['Title Number'].isna()]
-unidentified_ne_titles_ccod = ccod.merge(unidentified_ne_titles, how='inner', left_on='Title Number', right_on='Title')
-display(unidentified_ne_titles)
+unidentified_ne_titles_ccod = ccod.merge(unidentified_ne_titles, how='right', left_on='Title Number', right_on='Title')
+display(pd.DataFrame(unidentified_ne_titles['Title']).reset_index())
 
 # Joining back to unfiltered ccod data produces empty table error, suggesting title numbers aren't present in unfiltered ccod - need to check this
 
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ###### Get extra identified titles
+
+# COMMAND ----------
+
 # Find in ccod ne titles which have been identified by my script, but aren't in list from ne. Don't need to join back to unfiltered ccod data here as it should already be present from filtered ccod data.
-extra_identified_ne_titles = ne_ccod_and_supplied_titles[ne_ccod_and_supplied_titles['Title'].isna()]
+extra_identified_ne_polygons = ne_ccod_and_supplied_titles[ne_ccod_and_supplied_titles['Title'].isna()]
+extra_identified_ne_titles = extra_identified_ne_polygons.dissolve(by='TITLE_NO')
 display(extra_identified_ne_titles)
 
 # COMMAND ----------
 
 display(extra_identified_ne_titles['Proprietor Name (1)'].value_counts())
+
+# COMMAND ----------
+
+# get area of extra titles
+extra_identified_ne_titles_area = extra_identified_ne_titles.dissolve().area.sum()/10000
+print(f'Area of parcels identified as NE by NE land parcel dataset, but not by NE supplid title list: {extra_identified_ne_titles_area} hectares')
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Comparison to ownership polygons
+
+# COMMAND ----------
+
+# have a look at the data - has title numbers in, so may not add value to compare spatially
+ne_ownership_polygons
+
+# COMMAND ----------
+
+# check if titles all in both datasets
+ne_ownership_vs_titles = ne_ownership_polygons.merge(ne_titles, how='outer', left_on='TITLE_NO', right_on='Title')
+#ne_ownership_vs_titles = ne_ownership_vs_titles.dissolve(by='TITLE_NO')
+ne_ownership_not_in_titles = ne_ownership_vs_titles[ne_ownership_vs_titles['Title'].isna()]
+ne_titles_not_in_ownership = ne_ownership_vs_titles[ne_ownership_vs_titles['TITLE_NO'].isna()]
+display(ne_ownership_not_in_titles)
+display(ne_titles_not_in_ownership)
 
 # COMMAND ----------
 
@@ -181,7 +278,7 @@ potential_fc_polygon_ccod = polygon_ccod_defra[polygon_ccod_defra['current_organ
 
 # create buffered version to manage edge effects (FC data seems to have excess boundary a lot of the time)
 potential_fc_polygon_ccod_buffered = potential_fc_polygon_ccod
-potential_fc_polygon_ccod_buffered.geometry = potential_fc_polygon_ccod_buffered.geometry.buffer(20)
+potential_fc_polygon_ccod_buffered.geometry = potential_fc_polygon_ccod_buffered.geometry.buffer(-2)
 
 # COMMAND ----------
 
@@ -242,6 +339,59 @@ fc_registration_polygons
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##### Get ccod info on all fc registrations to help delineate defra and fe parcels
+
+# COMMAND ----------
+
+# get unique list of titles from fc data and filter ccod using this
+fc_registration_titles = fc_registration_polygons['title_no'].unique()
+fc_ccod = ccod[ccod['Title Number'].isin(fc_registration_titles)]
+# have a look at proprietor info fields to look for patterns
+display(fc_ccod['Proprietor Name (1)'].value_counts())
+
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC pip install thefuzz
+
+# COMMAND ----------
+
+from thefuzz import fuzz
+from thefuzz import process
+
+# COMMAND ----------
+
+def get_fuzzy_match_min_score(string_to_search: str, match_options: list):
+  '''
+  Finds the best match and best match score for all match options in the search string,
+  then returns the lowest best match score of all of these.
+
+  Parameters:
+    string_to_search (str): string to search and identify best matches from
+    match_options (list): list of match options which need to be identified in the string_to_search
+
+  Returns:
+    minimum score of all the best match scores
+  '''
+  best_match_scores = list()
+  for match_option in match_options:
+    best_match = process.extractOne(match_option,string_to_search.split(' '), scorer=fuzz.ratio)
+    best_match_scores.append(best_match[1])
+  return(min(best_match_scores))
+
+# COMMAND ----------
+
+# investigate fc addresses
+fc_addresses = pd.DataFrame(fc_ccod['Proprietor (1) Address (1)'].unique()).reset_index(drop=True)
+fc_addresses["min_match_ratio"] = fc_addresses[0].apply(
+                lambda x: get_fuzzy_match_min_score(x, ['BS16','1EJ']))
+
+display(fc_addresses[fc_addresses['min_match_ratio']<60])
+
+# COMMAND ----------
+
 fc_registration_polygons['propriet_2'].value_counts()
 
 # COMMAND ----------
@@ -257,14 +407,34 @@ fc_ccod_and_fe_registrations_titles
 
 # COMMAND ----------
 
-identified_hlmr_not_matching_fc_registrations = fc_ccod_and_fe_registrations_titles[fc_ccod_and_fe_registrations_titles['Title Number'].isna()]
-fc_registrations_not_matching_identified_hmlr = fc_ccod_and_fe_registrations_titles[fc_ccod_and_fe_registrations_titles['title_no'].isna()]
+identified_hlmr_not_matching_fc_registrations = fc_ccod_and_fe_registrations_titles[fc_ccod_and_fe_registrations_titles['title_no'].isna()]
+fc_registrations_not_matching_identified_hmlr = fc_ccod_and_fe_registrations_titles[fc_ccod_and_fe_registrations_titles['Title Number'].isna()]
 
 # COMMAND ----------
 
 
 print(f'Number of records in hmlr derived which don`t have matching records in fc registation data: {len(identified_hlmr_not_matching_fc_registrations)}')
-print(f'Number of records in hmlr derived which don`t have matching records in fc registation data: {len(fc_registrations_not_matching_identified_hmlr)}')
+print(f'Number of records in fc registation data which don`t have matching records in hmlr derived data: {len(fc_registrations_not_matching_identified_hmlr)}')
+
+# COMMAND ----------
+
+fe_unidentified_titles_list = fc_registrations_not_matching_identified_hmlr['Title']
+
+# COMMAND ----------
+
+identified_hlmr_not_matching_fc_registrations
+
+# COMMAND ----------
+
+fc_registrations_not_matching_identified_hmlr['Proprietor Name (1)'].unique()
+
+# COMMAND ----------
+
+fc_registrations_not_matching_identified_hmlr['Proprietor (1) Address (1)'].value_counts()
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 

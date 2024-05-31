@@ -45,7 +45,7 @@ polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', rig
 
 # COMMAND ----------
 
-polygon_ccod.to_parquet(polygon_ccod_path)
+#polygon_ccod.to_parquet(polygon_ccod_path)
 
 # COMMAND ----------
 
@@ -76,7 +76,7 @@ ccod_defra = pd.read_csv(ccod_defra_and_alb_path, sep = ',')
 
 # COMMAND ----------
 
-ccod_defra
+display(ccod_defra)
 
 # COMMAND ----------
 

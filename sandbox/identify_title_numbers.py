@@ -26,15 +26,15 @@ from thefuzz import process
 
 # COMMAND ----------
 
-def get_fuzzy_match_max_score(string_to_search, match_options):
-  '''
-  Don't think this one is used
-  '''
-  best_match_scores = list()
-  for match_option in match_options:
-    best_match = process.extractOne(match_option,string_to_search.split(' '), scorer=fuzz.ratio)
-    best_match_scores.append(best_match[1])
-  return(max(best_match_scores))
+#def get_fuzzy_match_max_score(string_to_search, match_options):
+#  '''
+#  Don't think this one is used -REMOVE?
+#  '''
+#  best_match_scores = list()
+#  for match_option in match_options:
+#    best_match = process.extractOne(match_option,string_to_search.split(' '), scorer=fuzz.ratio)
+#    best_match_scores.append(best_match[1])
+#  return(max(best_match_scores))
 
 # COMMAND ----------
 
@@ -101,7 +101,11 @@ ccod.head()
 
 # COMMAND ----------
 
-ccod[ccod['Title Number']=='YEA71965']
+ccod[ccod['Proprietor Name (2)'].str.contains('bristol', case=False, na=False)]
+
+# COMMAND ----------
+
+ccod[ccod['Proprietor Name (2)'].str.contains('bristol', case=False, na=False)]
 
 # COMMAND ----------
 
@@ -124,7 +128,7 @@ ccod[ccod['Title Number']=='YEA71965']
 cs_department_identifiers = ['state', 'secretary', 'ministry', 'minister', 'department']
 
 # department specific identifiers
-all_cs_department_name_identifiers = ['environment','food','rural', 'agriculture']
+all_cs_department_name_identifiers = ['environment','food','rural', 'agriculture', 'resources', 'fisheries']
 
 # This method produces too many outputs, as the search parameters become too wide, but could be more useful for other departments
 
@@ -152,7 +156,7 @@ defra_names = ccod_filtered['Proprietor Name (1)'].unique()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Inspect identified potential defra names and spurious names
+# MAGIC ##### Remove spurious found proprietor names
 
 # COMMAND ----------
 
@@ -183,6 +187,17 @@ defra_names_df = defra_names_df[~defra_names_df[0].isin(to_remove)]
 
 # Output identified names for manual QA
 display(defra_names_df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Add aditional identified names
+
+# COMMAND ----------
+
+defra_names_to_add = pd.DataFrame({
+    0: 'THE MINISTER OF LAND AND NATURAL RESOURCES'
+})
 
 # COMMAND ----------
 
@@ -932,16 +947,12 @@ for current_org_name, org_names in alb_found_names_translation_dict.items():
 
 # COMMAND ----------
 
-ccod[ccod['Title Number']=='YEA71965']
-
-# COMMAND ----------
-
 display(ccod)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Export titles of interest to csv
+# MAGIC ##### Filter to remove non defra/ALB data
 
 # COMMAND ----------
 
@@ -950,4 +961,48 @@ display(ccod_of_interest)
 
 # COMMAND ----------
 
-ccod_of_interest.to_csv("/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/ccod_of_interest_defra_and_albs_typo_resilient.csv")
+# MAGIC %md
+# MAGIC #### Disentangling forestry commission and DEFRA titles
+
+# COMMAND ----------
+
+# based on comparison to Forestry commission ownership data, search terms to delineate defra and FE titles have been identified, although these are not comprehensive as other identified search terms would also identify defra properties
+search_terms_list = [
+    ['BS16','1EJ'],
+    ['coldharbour'],
+    ['SY8', '2HD']
+]
+for search_terms in search_terms_list:
+    ccod_of_interest["fc_min_match_ratio"] = ccod_of_interest['Proprietor (1) Address (1)'].apply(
+                    lambda x: get_fuzzy_match_min_score(x, search_terms))
+    mask = ccod_of_interest['fc_min_match_ratio'] > 80
+    ccod_of_interest['current_organisation'][mask] = 'Forestry Commission'
+    ccod_of_interest = ccod_of_interest.drop(columns=['fc_min_match_ratio'])
+
+
+# COMMAND ----------
+
+display(ccod_of_interest[ccod_of_interest['current_organisation']=='Forestry Commission'])
+
+# COMMAND ----------
+
+fc_ccod = ccod_of_interest[ccod_of_interest['Proprietor (1) Address (1)'].str.contains('TA1 4AP', case=False, na=False)]
+fc_ccod
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Export titles of interest to csv
+
+# COMMAND ----------
+
+# drop created min_match_ratio field - no longer needed and populated only with values for last organisation searched for, so mostly meaningless
+ccod_of_interest = ccod_of_interest.drop(columns=['min_match_ratio'])
+
+# COMMAND ----------
+
+display(ccod_of_interest)
+
+# COMMAND ----------
+
+ccod_of_interest.to_csv("/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/ccod_of_interest_defra_and_albs_fc_sorted.csv")
