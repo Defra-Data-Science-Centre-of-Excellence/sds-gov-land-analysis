@@ -16,7 +16,7 @@ import pandas as pd
 # COMMAND ----------
 
 # import fe polygon data
-fe_polygons = gpd.read_file(fe_polygons_path)
+fe_polygons = gpd.read_file(fe_ownership_polygons_path)
 
 # COMMAND ----------
 
@@ -61,6 +61,52 @@ polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', rig
 overlap_fe_polygon_ccod = gpd.sjoin(fe_polygons, polygon_ccod, how='left', lsuffix='_fe', rsuffix='_ccod')
 # write fe polygons with associated ccod info to geojson
 overlap_fe_polygon_ccod.to_file(fe_title_polygons_with_ccod_data_path, driver='GeoJSON')
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Get polygon overlapping with identified gets in hmlr derrived parcels when compared to fe data
+
+# COMMAND ----------
+
+# import fe_polygon_ccod gap data
+hmlr_fe_gaps = gpd.read_file(fc_polygons_not_overlapping_potential_fc_polygon_ccod_path)
+
+# COMMAND ----------
+
+# get nps-ccod records overlapping with fe-polygon_ccod differences
+overlap_hmlr_fe_gaps_polygon_ccod = gpd.sjoin(hmlr_fe_gaps, polygon_ccod, how='left', lsuffix='_fe_gaps', rsuffix='_ccod')
+# write fe polygons with associated ccod info to geojson
+overlap_hmlr_fe_gaps_polygon_ccod.to_file(hmlr_fe_gaps_ccod_info_path, driver='GeoJSON')
+
+# COMMAND ----------
+
+display(pd.DataFrame(overlap_hmlr_fe_gaps_polygon_ccod['Proprietor Name (1)'].value_counts()).reset_index())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Same for epims - copy this to other notebook
+
+# COMMAND ----------
+
+# import epims_polygon_ccod gap data
+hmlr_epims_gaps = gpd.read_file(epims_with_no_overlapping_polygon_ccod_defra_path)
+
+# COMMAND ----------
+
+# get nps-ccod records overlapping with epims-plygons_ccod differences
+overlap_hmlr_epims_gaps_polygon_ccod = gpd.sjoin(hmlr_epims_gaps, polygon_ccod, how='left', lsuffix='_epims_gaps', rsuffix='_ccod')
+# write epims polygons with associated ccod info to geojson
+overlap_hmlr_epims_gaps_polygon_ccod.to_file(hmlr_epims_gaps_ccod_info_path, driver='GeoJSON')
+
+# COMMAND ----------
+
+display(pd.DataFrame(overlap_hmlr_epims_gaps_polygon_ccod['Proprietor Name (1)'].value_counts()).reset_index())
+
+# COMMAND ----------
+
+overlap_hmlr_fe_gaps_polygon_ccod.explore()
 
 # COMMAND ----------
 

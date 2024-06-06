@@ -12,7 +12,7 @@ import folium
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Get defra related polygons
+# MAGIC #### Read in required datasets
 
 # COMMAND ----------
 
@@ -27,35 +27,60 @@ ccod = pd.read_csv(
         "Proprietorship Category (1)",
         "Proprietor (1) Address (1)",
         "Date Proprietor Added",
-        "Additional Proprietor Indicator"
+        "Additional Proprietor Indicator",
+        "Proprietor Name (2)",
+        "Proprietor Name (3)",
+        "Proprietor Name (4)"
         ]
 )
 
 # COMMAND ----------
 
+national_polygon = gpd.read_parquet(national_polygon_parquet_path)
+
+# COMMAND ----------
+
+# join polygon dataset with unfiltered ccod data - need this to look at adjascent polyogon info etc.
+polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', right_on='Title Number')
+
+# COMMAND ----------
+
+#polygon_ccod.to_parquet(polygon_ccod_path)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Extract a study area portion of the NPS
+
+# COMMAND ----------
+
+study_area = gpd.read_parquet(f'{study_area_directory_path}/botanic_gardens.parquet')
+
+# COMMAND ----------
+
+study_area_nps = polygon_ccod.overlay(study_area, how='intersection', keep_geom_type=False, make_valid=True)
+
+# COMMAND ----------
+
+study_area_nps.to_parquet(f'{nps_by_study_area_directory_path}/botanic_gardens_nps_ccod.parquet')
+
+# COMMAND ----------
+
+study_area_nps.explore()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Get identified DEFRA polygons
+
+# COMMAND ----------
+
 # import ccod filtered for defra data
-ccod_defra = pd.read_csv(ccod_defra_path, sep = ',')
+ccod_defra = pd.read_csv(ccod_defra_and_alb_path, sep = ',')
 
 # COMMAND ----------
 
-# Create sql statement to select for defra associated title numbers
-title_numbers_of_interest = ccod_defra['Title Number'].unique()
-title_numbers_of_interest_sql_string = ''
-for title_number in title_numbers_of_interest:
-    title_numbers_of_interest_sql_string = f"{title_numbers_of_interest_sql_string}'{title_number}', "
-title_numbers_of_interest_sql_string = title_numbers_of_interest_sql_string.rstrip(', ')
-title_numbers_of_interest_sql_string = f'({title_numbers_of_interest_sql_string})'
-
-# COMMAND ----------
-
-# import unfiltered national polygon dataset
-national_polygon_dfs = []
-for national_polygon_path in national_polygon_paths:
-    national_polygon_df = gpd.read_file(national_polygon_path)#, where = f'TITLE_NO IN {title_numbers_of_interest_sql_string}')
-    national_polygon_dfs.append(national_polygon_df)
-    print(f'loaded into dataframe: {national_polygon_path}')
-national_polygon = pd.concat(national_polygon_dfs, ignore_index=True)
-
+display(ccod_defra)
 
 # COMMAND ----------
 
@@ -65,12 +90,16 @@ display(polygon_ccod_defra)
 
 # COMMAND ----------
 
-display(polygon_ccod_defra)
+polygon_ccod_defra_only = polygon_ccod_defra[polygon_ccod_defra['current_organisation'].notna()]
 
 # COMMAND ----------
 
+display(polygon_ccod_defra_only)
+
+# COMMAND ----------
+
+polygon_ccod_defra_only.to_file(polygon_ccod_defra_path, driver='GeoJSON', mode='w')
 # write fe polygons with associated ccod info to geojson
-polygon_ccod_defra.to_file(polygon_ccod_defra_path, driver='GeoJSON')
 
 # COMMAND ----------
 
@@ -86,8 +115,6 @@ polygon_ccod_defra_buffered['geometry'] = polygon_ccod_defra_buffered.geometry.b
 
 # COMMAND ----------
 
-# join polygon dataset with unfiltered ccod data - need this to look at adjascent polyogon info etc.
-polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', right_on='Title Number')
 # spatial join buffered defra polygons with unfiltered polygon-ccod data
 national_polygon_bordering_defra_properties = polygon_ccod.sjoin(polygon_ccod_defra_buffered, how='inner', lsuffix='_all', rsuffix='_defra')
 # display attributes for overlapping polygons for visual inspection
