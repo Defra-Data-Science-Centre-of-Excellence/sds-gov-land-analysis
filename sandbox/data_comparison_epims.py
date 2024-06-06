@@ -4,8 +4,15 @@
 
 # COMMAND ----------
 
+# MAGIC %sh
+# MAGIC pip install geodatasets
+
+# COMMAND ----------
+
 import geopandas as gpd
 import pandas as pd
+import geodatasets
+import matplotlib.pyplot as plt
 
 # COMMAND ----------
 
@@ -30,7 +37,7 @@ organisations_of_interest = alb_found_names_translation_dict.keys()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Prepare emips data
+# MAGIC #### Prepare empis data
 
 # COMMAND ----------
 
@@ -43,11 +50,17 @@ display(epims)
 # Read in point dataset - filter for defra points only
 epims_point = pd.read_csv(epims_point_path)
 epims_point_defra = epims_point[epims_point['Department']=='Department for Environment, Food and Rural Affairs']
+epims_point_fc = epims_point[epims_point['PropertyCentre'].isin(['FC - FORESTRY COMMISSION â€“ LAND REGISTER', 'FC - FORESTRY COMMISSION ENGLAND', 'FC - FORESTRY COMMISSION ENGLAND (OPERATIONAL BUILDINGS)'])]
+epims_point_defra_alb = pd.concat([epims_point_defra, epims_point_fc])
+
+# COMMAND ----------
+
+display(pd.DataFrame(epims_point['PropertyCentre'].unique()))
 
 # COMMAND ----------
 
 # Join epims polygons to defra points by holding ID, this gives us the attribute info for polygons
-epims = epims.merge(epims_point_defra, left_on='ePIMSHoldi', right_on='ePIMSHoldingId')
+epims = epims.merge(epims_point_defra_alb, left_on='ePIMSHoldi', right_on='ePIMSHoldingId')
 epims = epims.explode()
 epims.geom_type.unique()
 epims['df'] = 'epims'
@@ -61,13 +74,12 @@ display(invalid_epims)
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ##### Translate PropertyCentre to standard DEFRA organsiation name
+epims
 
 # COMMAND ----------
 
-
-epims['PropertyCentre'].unique()
+# MAGIC %md
+# MAGIC ##### Translate PropertyCentre to standard DEFRA organsiation name
 
 # COMMAND ----------
 
@@ -80,7 +92,11 @@ organisation_translation_dict = {
        'DEFRA - NATIONAL FOREST COMPANY OPERATIONAL': 'National Forest Company',
        'DEFRA - ROYAL BOTANIC GARDENS KEW': 'Royal Botanic Gardens Kew',
        'DEFRA - AGRICULTURE & HORTICULTURE DEVELOPMENT BOARD': 'Agriculture and Horticulture Development Board',
-       'DEFRA - SEA FISH INDUSTRY AUTHORITY':'Seafish'}
+       'DEFRA - SEA FISH INDUSTRY AUTHORITY':'Seafish',
+       'FC - FORESTRY COMMISSION â€“ LAND REGISTER': 'Forestry Commission',
+       'FC - FORESTRY COMMISSION ENGLAND': 'Forestry Commission',
+       'FC - FORESTRY COMMISSION ENGLAND (OPERATIONAL BUILDINGS)': 'Forestry Commission',
+       }
 
 # COMMAND ----------
 
@@ -101,13 +117,13 @@ for organisation in organisations_of_interest:
     organisation_polygon_ccod = epims[epims['organisation'] == organisation]
     # get total area
     organisation_polygon_ccod.geometry = organisation_polygon_ccod.geometry.make_valid()
-    total_area = organisation_polygon_ccod.dissolve().area.sum()
+    total_area = organisation_polygon_ccod.dissolve().area.sum()/10000
     #dissolve by freehold/leasehold
     holding_dissolved_polygon_ccod = organisation_polygon_ccod.dissolve(by='HoldingTypeDescription', as_index=False)
     land = holding_dissolved_polygon_ccod[holding_dissolved_polygon_ccod['HoldingTypeDescription'] == 'Land Only']
-    land_area = land.area.sum()
+    land_area = land.area.sum()/10000
     land_buildings = holding_dissolved_polygon_ccod[holding_dissolved_polygon_ccod['HoldingTypeDescription'] == 'Land & Buildings']
-    land_buildings_area = land_buildings.area.sum()
+    land_buildings_area = land_buildings.area.sum()/10000
     # sense check that freehold and leasehold add to total area
     #if land_area + land_buildings_area != total_area:
     #print(f'Sense check: freehold area ({freehold_area}) and leasehold area ({leasehold_area}) do not add to total area ({total_area})')
@@ -115,11 +131,20 @@ for organisation in organisations_of_interest:
     #else:
     #    sense_check = 0
     overlap_land_land_buildings = gpd.overlay(land, land_buildings, how='intersection', make_valid=True)
-    overlap_land_land_buildings_area = overlap_land_land_buildings.area.sum()
+    overlap_land_land_buildings_area = overlap_land_land_buildings.area.sum()/10000
     # add values to dataframe
     df_row = pd.DataFrame(data={'organisation': organisation, 'total_area': total_area, 'land_area': land_area, 'land_buildings_area': land_buildings_area, 'overlap_land_land_buildings_leasehold': overlap_land_land_buildings_area}, index=[0])
     area_df = pd.concat([area_df, df_row], ignore_index=True)
 display(area_df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### output area summary df
+
+# COMMAND ----------
+
+area_df.to_csv(csv_area_df_epims_path)
 
 # COMMAND ----------
 
@@ -140,6 +165,46 @@ polygon_ccod_defra['df'] = 'polygon_ccod_defra'
 polygon_ccod_defra['geometry'] = polygon_ccod_defra.make_valid()
 invalid_polygon_ccod_defra = polygon_ccod_defra.loc[~polygon_ccod_defra.geometry.is_valid]
 display(invalid_polygon_ccod_defra)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Look at Kew gardens visually, as this has the largest persentage disrepancy
+
+# COMMAND ----------
+
+polygon_ccod_rbk = polygon_ccod_defra[polygon_ccod_defra['current_organisation']=='Royal Botanic Gardens Kew']
+epims_rbk = epims[epims['organisation']=='Royal Botanic Gardens Kew']
+
+# COMMAND ----------
+
+poylgon_ccod_area = gpd.read_parquet(f'{nps_by_study_area_directory_path}/botanic_gardens_nps_ccod.parquet')
+
+# COMMAND ----------
+
+polygon_ccod_area_epims_kew = gpd.overlay(poylgon_ccod_area, epims_rbk, how='intersection')
+
+# COMMAND ----------
+
+fig, ax = plt.subplots()
+ax1 = polygon_ccod_area_epims_kew.plot(column='Proprietor Name (1)', legend=True, figsize=(30, 20), ax=ax)
+ax2 = epims_rbk.boundary.plot(color='black', ax=ax)
+ax.set_xticks([])
+leg = ax1.get_legend()
+leg.set_bbox_to_anchor((0., 0., 4., 1.))
+plt.show()
+
+# COMMAND ----------
+
+epims_rbk.explore()
+
+# COMMAND ----------
+
+polygon_ccod_rbk.explore()
+
+# COMMAND ----------
+
+polygon_ccod_rbk
 
 # COMMAND ----------
 

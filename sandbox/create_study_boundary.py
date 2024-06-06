@@ -14,14 +14,14 @@ import geopandas as gpd
 # COMMAND ----------
 
 # User to set variables
-easting = 403089
-northing = 116128
-study_area_filename = 'salisbury'
+easting = 533807
+northing = 131737
+study_area_filename = 'botanic_gardens'
 
 # COMMAND ----------
 
 point = gpd.points_from_xy(x=[easting], y=[northing], crs="EPSG:27700")
-square = point.buffer(distance=40000, cap_style=3)
+square = point.buffer(distance=5000, cap_style=3)
 study_area = gpd.GeoDataFrame(geometry = square)
 
 # COMMAND ----------

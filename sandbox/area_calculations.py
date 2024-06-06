@@ -37,6 +37,18 @@ polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
 
 # COMMAND ----------
 
+defra_freehold = polygon_ccod_defra[polygon_ccod_defra['Tenure']=='Freehold']
+defra_freehold_area = defra_freehold.dissolve().area.sum()/10000
+defra_freehold_area
+
+# COMMAND ----------
+
+fc_freehold = defra_freehold[defra_freehold['current_organisation']=='Forestry Commission']
+fc_freehold_area = fc_freehold.dissolve().area.sum()/10000
+fc_freehold_area
+
+# COMMAND ----------
+
 polygon_ccod_defra.Tenure.unique()
 
 # COMMAND ----------
@@ -78,6 +90,20 @@ area_df
 # COMMAND ----------
 
 display(area_df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Output to csv
+
+# COMMAND ----------
+
+area_df.to_csv(csv_area_df_polygon_ccod_defra_path)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Area plotting
 
 # COMMAND ----------
 

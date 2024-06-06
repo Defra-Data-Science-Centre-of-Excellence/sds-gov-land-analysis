@@ -54,7 +54,7 @@ polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', rig
 
 # COMMAND ----------
 
-study_area = gpd.read_parquet(f'{study_area_directory_path}/salisbury.parquet')
+study_area = gpd.read_parquet(f'{study_area_directory_path}/botanic_gardens.parquet')
 
 # COMMAND ----------
 
@@ -62,7 +62,11 @@ study_area_nps = polygon_ccod.overlay(study_area, how='intersection', keep_geom_
 
 # COMMAND ----------
 
-study_area_nps.to_parquet('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/15_minute_greenspace/open_access_land/study_area_nps/salisbury/nps_ccod.parquet')
+study_area_nps.to_parquet(f'{nps_by_study_area_directory_path}/botanic_gardens_nps_ccod.parquet')
+
+# COMMAND ----------
+
+study_area_nps.explore()
 
 # COMMAND ----------
 

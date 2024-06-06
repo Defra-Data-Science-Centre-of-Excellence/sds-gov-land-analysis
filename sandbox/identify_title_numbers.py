@@ -191,17 +191,6 @@ display(defra_names_df)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Add aditional identified names
-
-# COMMAND ----------
-
-defra_names_to_add = pd.DataFrame({
-    0: 'THE MINISTER OF LAND AND NATURAL RESOURCES'
-})
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC ##### Use created list of names to search for names with typos
 
 # COMMAND ----------

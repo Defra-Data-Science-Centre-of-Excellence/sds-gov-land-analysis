@@ -269,6 +269,8 @@ fc_defra_ccod = ccod_of_interest[ccod_of_interest['current_organisation'].isin([
 
 fc_ccod = ccod_of_interest[ccod_of_interest['current_organisation'] == 'Forestry Commission']
 display(fc_ccod)
+fc_polygon_ccod = polygon_ccod_defra[polygon_ccod_defra['current_organisation'] == 'Forestry Commission']
+display(fc_ccod)
 
 # COMMAND ----------
 
@@ -276,51 +278,14 @@ potential_fc_polygon_ccod = polygon_ccod_defra[polygon_ccod_defra['current_organ
 
 # COMMAND ----------
 
-# create buffered version to manage edge effects (FC data seems to have excess boundary a lot of the time)
+# create buffered version to manage edge effects (FC data seems to have excess boundary a lot of the time) - would it be better to remove after sjoin by title number?
 potential_fc_polygon_ccod_buffered = potential_fc_polygon_ccod
 potential_fc_polygon_ccod_buffered.geometry = potential_fc_polygon_ccod_buffered.geometry.buffer(-2)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Could this be done better by just re-removing tilte numbers after sjoin?
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC FC data retrieved by Tim
-
-# COMMAND ----------
-
-# import supplied fe polygon data which has been spatially joined to nps-ccod data
-fe_title_polygons_with_ccod_data = gpd.read_file(fe_title_polygons_with_ccod_data_path)
-
-# COMMAND ----------
-
-# get total number of titles identifies as possible fe titles
-fe_proposed_title_number_counts = fe_title_polygons_with_ccod_data['Title Number'].value_counts()
-display(fe_proposed_title_number_counts.to_frame().reset_index())
-# this is quite a lot
-
-# COMMAND ----------
-
-# get the count of different proprietors associated with proposed fe titles
-fe_proposed_title_name_counts = fe_title_polygons_with_ccod_data['Proprietor Name (1)'].value_counts()
-display(fe_proposed_title_name_counts.to_frame().reset_index())
-# lots of these don't look like fe proprietor names - possible leasehold/freehold thing?
-
-# COMMAND ----------
-
-# remove 
-
-# COMMAND ----------
-
-display(fe_title_polygons_with_ccod_data)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC FE Land ownership data
+# MAGIC #### FE Land ownership data
 
 # COMMAND ----------
 
@@ -353,45 +318,7 @@ display(fc_ccod['Proprietor Name (1)'].value_counts())
 
 # COMMAND ----------
 
-# MAGIC %sh
-# MAGIC pip install thefuzz
-
-# COMMAND ----------
-
-from thefuzz import fuzz
-from thefuzz import process
-
-# COMMAND ----------
-
-def get_fuzzy_match_min_score(string_to_search: str, match_options: list):
-  '''
-  Finds the best match and best match score for all match options in the search string,
-  then returns the lowest best match score of all of these.
-
-  Parameters:
-    string_to_search (str): string to search and identify best matches from
-    match_options (list): list of match options which need to be identified in the string_to_search
-
-  Returns:
-    minimum score of all the best match scores
-  '''
-  best_match_scores = list()
-  for match_option in match_options:
-    best_match = process.extractOne(match_option,string_to_search.split(' '), scorer=fuzz.ratio)
-    best_match_scores.append(best_match[1])
-  return(min(best_match_scores))
-
-# COMMAND ----------
-
-# investigate fc addresses
-fc_addresses = pd.DataFrame(fc_ccod['Proprietor (1) Address (1)'].unique()).reset_index(drop=True)
-fc_addresses["min_match_ratio"] = fc_addresses[0].apply(
-                lambda x: get_fuzzy_match_min_score(x, ['BS16','1EJ']))
-
-display(fc_addresses[fc_addresses['min_match_ratio']<60])
-
-# COMMAND ----------
-
+# investigating proprietor 2 field for usefulness in delineating fc records, but it's not this populated in hmlr data
 fc_registration_polygons['propriet_2'].value_counts()
 
 # COMMAND ----------
@@ -402,7 +329,7 @@ fc_registration_polygons['propriet_2'].value_counts()
 # COMMAND ----------
 
 # join selected fc-defra ccod data to fc title list (on title number) to enable comparison
-fc_ccod_and_fe_registrations_titles = fc_defra_ccod.merge(fc_registration_polygons, how='outer', left_on='Title Number', right_on='title_no')
+fc_ccod_and_fe_registrations_titles = fc_polygon_ccod.merge(fc_registration_polygons, how='outer', left_on='Title Number', right_on='title_no')
 fc_ccod_and_fe_registrations_titles
 
 # COMMAND ----------
@@ -418,11 +345,22 @@ print(f'Number of records in fc registation data which don`t have matching recor
 
 # COMMAND ----------
 
-fe_unidentified_titles_list = fc_registrations_not_matching_identified_hmlr['Title']
+defra_entangled = fc_registrations_not_matching_identified_hmlr[fc_registrations_not_matching_identified_hmlr['title_no'].isin(polygon_ccod_defra['Title Number'])]
+defra_entangled.dissolve().area.sum()/10000
 
 # COMMAND ----------
 
-identified_hlmr_not_matching_fc_registrations
+fc_registrations_not_matching_identified_hmlr['t']
+
+# COMMAND ----------
+
+# get area for 
+identified_hlmr_not_matching_fc_registrations = gpd.GeoDataFrame(identified_hlmr_not_matching_fc_registrations, geometry=identified_hlmr_not_matching_fc_registrations.geometry_x)
+print(f'Area identified by HMLR derived data, not in FE polygons:{identified_hlmr_not_matching_fc_registrations.dissolve().area.sum()/10000}')
+# get area for 
+fc_registrations_not_matching_identified_hmlr = gpd.GeoDataFrame(fc_registrations_not_matching_identified_hmlr, geometry=fc_registrations_not_matching_identified_hmlr.geometry_y)
+print(f'Area identified by FE polygons, not in HMLR derived data:{fc_registrations_not_matching_identified_hmlr.dissolve().area.sum()/10000}')
+fc_registrations_not_matching_identified_hmlr.dissolve().area.sum()/10000
 
 # COMMAND ----------
 
@@ -434,12 +372,48 @@ fc_registrations_not_matching_identified_hmlr['Proprietor (1) Address (1)'].valu
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##### Freehold area comparison
 
+# COMMAND ----------
+
+fc_registration_polygons_freehold = fc_registration_polygons[fc_registration_polygons['tenure']=='Freehold']
+fc_registration_polygons_freehold_area = fc_registration_polygons_freehold.dissolve().area.sum()/10000
+fc_registration_polygons_freehold_area
+
+# COMMAND ----------
+
+fc_polygon_ccod_freehold = fc_polygon_ccod[fc_polygon_ccod['Tenure']=='Freehold']
+fc_polygon_ccod_freehold_area = fc_polygon_ccod_freehold.dissolve().area.sum()/10000
+fc_polygon_ccod_freehold_area
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Comparison to ownership dataset (managed internall by fe)
+# MAGIC ##### Leasehold area comparison
+
+# COMMAND ----------
+
+fc_registration_polygons_leasehold = fc_registration_polygons[fc_registration_polygons['tenure']=='Leasehold']
+fc_registration_polygons_leasehold_area = fc_registration_polygons_leasehold.dissolve().area.sum()/10000
+fc_registration_polygons_leasehold_area
+
+# COMMAND ----------
+
+fc_polygon_ccod_leasehold = fc_polygon_ccod[fc_polygon_ccod['Tenure']=='Leasehold']
+fc_polygon_ccod_leasehold_area = fc_polygon_ccod_leasehold.dissolve().area.sum()/10000
+fc_polygon_ccod_leasehold_area
+
+# COMMAND ----------
+
+# compile to dataframe for export
+area_df = pd.DataFrame(data={'HMLR derived (Ha)': [fc_polygon_ccod_freehold_area, fc_polygon_ccod_leasehold_area], 'FE registration area (Ha)': [fc_registration_polygons_freehold_area, fc_registration_polygons_leasehold_area], 'Difference (Ha)': [fc_polygon_ccod_freehold_area-fc_registration_polygons_freehold_area, fc_polygon_ccod_leasehold_area-fc_registration_polygons_leasehold_area]}, index=['Freehold', 'Leasehold'])
+display(area_df.reset_index())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Comparison to ownership dataset (managed internall by fe)
 
 # COMMAND ----------
 

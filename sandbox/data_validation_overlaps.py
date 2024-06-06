@@ -70,3 +70,7 @@ overlap_with_non_defra_estate.area.sum()/10000
 # COMMAND ----------
 
 overlap_with_non_defra_estate.dissolve().area.sum()/10000
+
+# COMMAND ----------
+
+

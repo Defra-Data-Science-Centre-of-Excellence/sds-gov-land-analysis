@@ -1,8 +1,4 @@
 # Databricks notebook source
-study_area_directory_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/15_minute_greenspace/open_access_land/study_areas'
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC #### Input data
 
@@ -29,12 +25,28 @@ polygon_ccod_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.
 
 # COMMAND ----------
 
+# National poylgon data by study area for manual inspection
+study_area_directory_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/study_areas'
+nps_by_study_area_directory_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/nps_by_study_area'
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC #### Output data
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##### Non-spatial
+
+# COMMAND ----------
+
 ccod_defra_and_alb_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/ccod_of_interest_defra_and_albs_fc_sorted.csv"
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Spatial
 
 # COMMAND ----------
 
@@ -48,6 +60,15 @@ polygon_ccod_fe_unfiltered_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ##### Area summary
+
+# COMMAND ----------
+
+csv_area_df_polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/outputs/area_by_organisation_from_hmlr_data.csv'
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC #### Existing data for comparison
 
 # COMMAND ----------
@@ -57,6 +78,8 @@ epims_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/
 epims_point_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/existing_data_for_comparison/epims/20230628_ePIMS_holdings_non_sensitive.csv"
 
 epims_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/existing_data_for_comparison/epims/defra/DEFRAALL.shp'
+
+csv_area_df_epims_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/existing_data_for_comparison/epims/area_by_organsisation_from_epims.csv'
 
 # COMMAND ----------
 

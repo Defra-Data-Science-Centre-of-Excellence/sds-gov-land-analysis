@@ -1,4 +1,8 @@
 # Databricks notebook source
+import geopandas as gpd
+
+# COMMAND ----------
+
 # MAGIC %run
 # MAGIC ./paths
 
@@ -26,22 +30,36 @@ def download_link(filepath, convert_filepath=False):
 
 # COMMAND ----------
 
-download_link(fc_polygons_not_overlapping_potential_fc_polygon_ccod_buffered_path, convert_filepath=True)
+data = gpd.read_file(polygon_ccod_defra_path)
 
 # COMMAND ----------
 
-display(download_link(epims_defra_with_no_overlapping_polygon_ccod_defra_path, convert_filepath=True))
-display(download_link(polygon_ccod_defra_with_no_overlapping_epims_defra_path, convert_filepath=True))
+estate_names = data[data['Proprietor Name (1)'].str.contains('ESTATE')]
+estate_names = estate_names['Proprietor Name (1)'].unique()
+display(estate_names)
+defra_names_df = data[~data['Proprietor Name (1)'].isin(estate_names)]
 
 # COMMAND ----------
 
-display(download_link(hmlr_epims_gaps_ccod_info_path, convert_filepath=True))
-display(download_link(hmlr_fe_gaps_ccod_info_path, convert_filepath=True))
+defra_data = defra_names_df
 
 # COMMAND ----------
 
-display(download_link(hmlr_fe_buffer_minus05_gaps_ccod_info_path, convert_filepath=True))
+data_selected = defra_data[['POLY_ID','Title Number','Tenure', 'current_organisation', 'historic_organisation', 'Proprietor Name (1)', 'Proprietor Name (2)', 'Proprietor Name (3)', 'Proprietor Name (4)', 'geometry']]
 
 # COMMAND ----------
 
-display(download_link('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/15_minute_greenspace/open_access_land/study_area_nps/salisbury/nps_ccod.geojson', convert_filepath=True))
+data_selected
+
+# COMMAND ----------
+
+data_selected.to_file(f'/tmp/hmlr_defra_estate.gpkg', driver='GPKG', layer='hmlr_defra_estate')
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC mv /tmp/hmlr_defra_estate.gpkg /dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/nps_outputs/hmlr_defra_estate.gpkg
+
+# COMMAND ----------
+
+display(download_link('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/nps_outputs/hmlr_defra_estate.gpkg', convert_filepath=True))

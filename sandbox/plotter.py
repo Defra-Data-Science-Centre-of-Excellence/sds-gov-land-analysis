@@ -16,19 +16,6 @@ import contextily as cx
 
 # COMMAND ----------
 
-import ssl
- 
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    # Legacy Python that doesn't verify HTTPS certificates by default
-    pass
-else:
-    # Handle target environment that doesn't support HTTPS verification
-    ssl._create_default_https_context = _create_unverified_https_context
-
-# COMMAND ----------
-
 # MAGIC %run
 # MAGIC ./paths
 
@@ -49,4 +36,4 @@ os_map = gpd.read_file('/dbfs/mnt/base/unrestricted/source_openstreetmap /datase
 
 ax = all_defra_land.plot(column='current_organisation', legend=True, figsize=(20, 15))
 leg = ax.get_legend()
-leg.set_bbox_to_anchor((0., 0., -0.2, 0.8))
+leg.set_bbox_to_anchor((0., 0., 0.5, -0.1))
