@@ -4,7 +4,7 @@ It includes the following scripts:
 #### General
 - paths: all data paths used for the analysis, including inputs and outputs
 - output_export: required specifically for databricks, this script enables easy download of files from the dbfs
-- constants: space to allow user to set global variables (primarily used to set organisation names of interest)
+- constants: space to allow user to set global variables (primarily used to set organisation names of interest, which should be edited as required depending on the organisations land is being investigated for)
 #### Data production
 - identify_title_numbers: working with UK Company Proprietor dataset (ccod), produce a version with only titles of interest, and additional fields to represent current and historic organisation of interes names
 - convert_nps_to_parquet: working with the national polygon dataset as shapefiles is slow, converting them to parquet once for use speeds up future processing
