@@ -30,30 +30,37 @@ def download_link(filepath, convert_filepath=False):
 
 # COMMAND ----------
 
-data = gpd.read_file(polygon_ccod_defra_path)
+display(download_link('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/validation/overlap_with_non_defra_estate_buffer_05.parquet', convert_filepath=True))
 
 # COMMAND ----------
 
-estate_names = data[data['Proprietor Name (1)'].str.contains('ESTATE')]
-estate_names = estate_names['Proprietor Name (1)'].unique()
-display(estate_names)
-defra_names_df = data[~data['Proprietor Name (1)'].isin(estate_names)]
+# read in datasets
+polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
+polygon_ccod_defra.geometry = polygon_ccod_defra.geometry.make_valid()
+polygon_ccod_defra_by_organisation = gpd.read_parquet(polygon_ccod_defra_by_organisation_path)
+polygon_ccod_defra_by_organisation.geometry = polygon_ccod_defra_by_organisation.geometry.make_valid()
+polygon_ccod_defra_by_organisation_tenure = gpd.read_parquet(polygon_ccod_defra_by_organisation_tenure_path)
+polygon_ccod_defra_by_organisation_tenure.geometry = polygon_ccod_defra_by_organisation_tenure.geometry.make_valid()
 
 # COMMAND ----------
 
-defra_data = defra_names_df
+polygon_ccod_defra_by_organisation_tenure
 
 # COMMAND ----------
 
-data_selected = defra_data[['POLY_ID','Title Number','Tenure', 'current_organisation', 'historic_organisation', 'Proprietor Name (1)', 'Proprietor Name (2)', 'Proprietor Name (3)', 'Proprietor Name (4)', 'geometry']]
+polygon_ccod_defra_by_organisation
 
 # COMMAND ----------
 
-data_selected
+polygon_ccod_defra = polygon_ccod_defra[['POLY_ID','Title Number','Tenure', 'current_organisation', 'historic_organisation', 'Proprietor Name (1)', 'Proprietor Name (2)', 'Proprietor Name (3)', 'Proprietor Name (4)', 'geometry']]
 
 # COMMAND ----------
 
-data_selected.to_file(f'/tmp/hmlr_defra_estate.gpkg', driver='GPKG', layer='hmlr_defra_estate')
+# output to geopackage in temp
+polygon_ccod_defra.to_file(f'/tmp/hmlr_defra_estate.gpkg', driver='GPKG', layer='defra_estate_by_land_parcel')
+polygon_ccod_defra_by_organisation.to_file(f'/tmp/hmlr_defra_estate.gpkg', driver='GPKG', layer='defra_estate_by_organisation')
+polygon_ccod_defra_by_organisation_tenure.to_file(f'/tmp/hmlr_defra_estate.gpkg', driver='GPKG', layer='defra_estate_by_organisation_and_tenure')
+
 
 # COMMAND ----------
 

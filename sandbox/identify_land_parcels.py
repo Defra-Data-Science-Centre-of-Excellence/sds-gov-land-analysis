@@ -1,4 +1,9 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC #### Setup
+
+# COMMAND ----------
+
 # import packages
 import geopandas as gpd
 import pandas as pd
@@ -8,6 +13,11 @@ import folium
 
 # MAGIC %run
 # MAGIC ./paths
+
+# COMMAND ----------
+
+# MAGIC %run
+# MAGIC ./constants
 
 # COMMAND ----------
 
@@ -34,6 +44,9 @@ ccod = pd.read_csv(
         ]
 )
 
+# import ccod filtered for defra data
+ccod_defra = pd.read_csv(ccod_defra_and_alb_path, sep = ',')
+
 # COMMAND ----------
 
 national_polygon = gpd.read_parquet(national_polygon_parquet_path)
@@ -45,12 +58,8 @@ polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', rig
 
 # COMMAND ----------
 
-#polygon_ccod.to_parquet(polygon_ccod_path)
-
-# COMMAND ----------
-
 # MAGIC %md
-# MAGIC #### Extract a study area portion of the NPS
+# MAGIC #### Optional: extract a study area portion of the NPS
 
 # COMMAND ----------
 
@@ -75,8 +84,8 @@ study_area_nps.explore()
 
 # COMMAND ----------
 
-# import ccod filtered for defra data
-ccod_defra = pd.read_csv(ccod_defra_and_alb_path, sep = ',')
+# MAGIC %md
+# MAGIC ##### Join defra ccod to polygon dataset
 
 # COMMAND ----------
 
@@ -98,13 +107,17 @@ display(polygon_ccod_defra_only)
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##### Export identified defra polygons
+
+# COMMAND ----------
+
 polygon_ccod_defra_only.to_file(polygon_ccod_defra_path, driver='GeoJSON', mode='w')
-# write fe polygons with associated ccod info to geojson
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Get info on polygons adjascent to defra related polygons
+# MAGIC #### Optional: Get info on polygons adjascent to defra polygons
 
 # COMMAND ----------
 
@@ -140,39 +153,3 @@ display(national_polygon_bordering_defra_properties['Proprietor Name (1)__all'].
 # remove defra proprietor names which have already been identified
 national_polygon_bordering_defra_properties_unidentified = national_polygon_bordering_defra_properties[~national_polygon_bordering_defra_properties['Proprietor Name (1)__all'].isin(ccod_defra['Proprietor Name (1)'])]
 display(national_polygon_bordering_defra_properties_unidentified['Proprietor Name (1)__all'].value_counts().to_frame().reset_index())
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Get some stats on the selected data
-
-# COMMAND ----------
-
-print(len(polygon_ccod))
-undissolved_area = polygon_ccod['geometry'].area.sum()
-print(f'Are using undissolved polygons is: {undissolved_area}')
-polygon_ccod.head(5)
-
-# COMMAND ----------
-
-polygon_ccod_dissolved = polygon_ccod.dissolve()
-dissolved_area = polygon_ccod_dissolved['geometry'].area.sum()
-dissolved_area_sqkm = dissolved_area/1000000
-print(f'Area using dissolved polygons is: {dissolved_area} square metres, or {dissolved_area_sqkm} square kilometres')
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Plot selected polygon data for inspection
-
-# COMMAND ----------
-
-# plot using matplotlib
-plot_undissolved = polygon_ccod.plot()
-plot_dissolved = polygon_ccod_dissolved.plot()
-
-# COMMAND ----------
-
-# use geopandas explore method to allow zooming
-polygon_ccod_sample = polygon_ccod.sample(1200)
-polygon_ccod_sample.explore()

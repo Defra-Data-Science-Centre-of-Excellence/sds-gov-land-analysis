@@ -1,6 +1,7 @@
 # Databricks notebook source
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import plotly.express as px
 
@@ -22,7 +23,7 @@ pd.options.display.float_format = '{:.2f}'.format
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Set organisations to calculate area for
+# MAGIC ##### Set organisations to calculate area for
 
 # COMMAND ----------
 
@@ -32,28 +33,22 @@ organisations_of_interest = alb_found_names_translation_dict.keys()
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##### Import polygon data
+
+# COMMAND ----------
+
 #import defra ccod-polygon data
 polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
 
 # COMMAND ----------
 
-defra_freehold = polygon_ccod_defra[polygon_ccod_defra['Tenure']=='Freehold']
-defra_freehold_area = defra_freehold.dissolve().area.sum()/10000
-defra_freehold_area
+# MAGIC %md
+# MAGIC ##### Calculate area for all organisations of interest
 
 # COMMAND ----------
 
-fc_freehold = defra_freehold[defra_freehold['current_organisation']=='Forestry Commission']
-fc_freehold_area = fc_freehold.dissolve().area.sum()/10000
-fc_freehold_area
-
-# COMMAND ----------
-
-polygon_ccod_defra.Tenure.unique()
-
-# COMMAND ----------
-
-area_df = pd.DataFrame(columns=['organisation', 'total_area', 'freehold_area', 'leasehold_area', 'sense_check', 'overlap_freehold_leasehold'])
+area_df = pd.DataFrame(columns=['organisation', 'total_area', 'freehold_area', 'leasehold_area', 'overlap_freehold_leasehold'])
 #For each organisation of interest
 for organisation in organisations_of_interest:
     organisation_polygon_ccod = polygon_ccod_defra[polygon_ccod_defra['current_organisation'] == organisation]
@@ -69,27 +64,36 @@ for organisation in organisations_of_interest:
     # sense check that freehold and leasehold add to total area
     if freehold_area + leasehold_area != total_area:
         print(f'Sense check: freehold area ({freehold_area}) and leasehold area ({leasehold_area}) do not add to total area ({total_area})')
-        sense_check = f'Difference of: {total_area - freehold_area - leasehold_area}'
-    else:
-        sense_check = 0
     overlap_freehold_leasehold = gpd.overlay(freehold, leasehold, how='intersection', make_valid=True)
     overlap_freehold_leasehold_area = overlap_freehold_leasehold.area.sum()/10000
     # add values to dataframe
-    df_row = pd.DataFrame(data={'organisation': organisation, 'total_area': total_area, 'freehold_area': freehold_area, 'leasehold_area': leasehold_area, 'sense_check': sense_check, 'overlap_freehold_leasehold': overlap_freehold_leasehold_area}, index=[0])
+    df_row = pd.DataFrame(data={'organisation': organisation, 'total_area': total_area, 'freehold_area': freehold_area, 'leasehold_area': leasehold_area, 'overlap_freehold_leasehold': overlap_freehold_leasehold_area}, index=[0])
     area_df = pd.concat([area_df, df_row], ignore_index=True)
 
 
 # COMMAND ----------
 
-overlap_freehold_leasehold.area
+# MAGIC %md
+# MAGIC ##### Get all non-zero areas for summary table in report
 
 # COMMAND ----------
 
-area_df
+non_zero_area_df = area_df[area_df['total_area']>0]
 
 # COMMAND ----------
 
-display(area_df)
+display(non_zero_area_df.sort_values(by='total_area', ascending=False))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Get list of all zero area organisations for inclusion in report
+
+# COMMAND ----------
+
+zero_area_df = area_df[area_df['total_area']==0].sort_values(by='organisation')
+zero_area_organisations = zero_area_df['organisation'].unique()
+print(zero_area_organisations)
 
 # COMMAND ----------
 
@@ -104,6 +108,11 @@ area_df.to_csv(csv_area_df_polygon_ccod_defra_path)
 
 # MAGIC %md
 # MAGIC #### Area plotting
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Seperate bar charts
 
 # COMMAND ----------
 
@@ -145,6 +154,49 @@ plt.show()
 
 area_df_big_landowners = area_df[area_df['total_area']>100]
 area_df_small_landowners = area_df[area_df['total_area']<=100]
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Clustered bar chart
+
+# COMMAND ----------
+
+plt.rcParams.update({'font.size': 14})
+
+area_df_non_zero = area_df[area_df['freehold_area']!=0]
+area_df_non_zero = area_df_non_zero.sort_values(by='total_area', ascending=True)
+organisations = area_df_non_zero['organisation']
+areas = {
+    'Leasehold': area_df_non_zero['leasehold_area'],
+    'Freehold': area_df_non_zero['freehold_area'],
+    'Total': area_df_non_zero['total_area'],
+}
+
+x = np.arange(len(organisations))  # the label locations
+width = 0.25  # the width of the bars
+multiplier = 0
+
+
+fig, ax = plt.subplots(layout='constrained', figsize=(15,10))
+
+for category, measurement in areas.items():
+    offset = width * multiplier
+    rects = ax.barh(x + offset, measurement, width, label=category)
+    #ax.bar_label(rects, padding=3)
+    multiplier += 1
+
+# Add some text for labels, title and custom x-axis tick labels, etc.
+ax.set_xlabel('Area (Ha)')
+ax.set_title(' Total, freehold and leasehold  land area for DEFRA and ALBs', y=1.03)
+ax.set_yticks(x + width, organisations, rotation=0)
+handles, labels = ax.get_legend_handles_labels()
+order = [2,1,0]
+ax.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='upper center', ncols=3)
+#ax.legend(loc='upper center', ncols=3)
+ax.set_ylim(0, 18)
+
+plt.show()
 
 # COMMAND ----------
 

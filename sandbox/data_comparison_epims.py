@@ -47,7 +47,7 @@ display(epims)
 
 # COMMAND ----------
 
-# Read in point dataset - filter for defra points only
+# Read in point dataset - filter for defra points only - forestry commission identified seperately
 epims_point = pd.read_csv(epims_point_path)
 epims_point_defra = epims_point[epims_point['Department']=='Department for Environment, Food and Rural Affairs']
 epims_point_fc = epims_point[epims_point['PropertyCentre'].isin(['FC - FORESTRY COMMISSION â€“ LAND REGISTER', 'FC - FORESTRY COMMISSION ENGLAND', 'FC - FORESTRY COMMISSION ENGLAND (OPERATIONAL BUILDINGS)'])]
@@ -83,6 +83,7 @@ epims
 
 # COMMAND ----------
 
+# keys are epims property centres and values are defra organisation name in the standardised text used for our generated dataset
 organisation_translation_dict = {
        'DEFRA - ENVIRONMENT AGENCY - CORPORATE ESTATE':'Environment Agency',
        'DEFRA - ENVIRONMENT AGENCY - FUNCTIONAL ESTATE': 'Environment Agency',
@@ -100,7 +101,7 @@ organisation_translation_dict = {
 
 # COMMAND ----------
 
-# add new organtisation column which can be matched to current organisation field in polygon-ccod data
+# add new translated organtisation column which can be matched to current organisation field in polygon-ccod data
 epims['organisation'] = epims['PropertyCentre']
 epims['organisation'] = epims['organisation'].map(organisation_translation_dict)
 
@@ -186,12 +187,24 @@ polygon_ccod_area_epims_kew = gpd.overlay(poylgon_ccod_area, epims_rbk, how='int
 
 # COMMAND ----------
 
-fig, ax = plt.subplots()
-ax1 = polygon_ccod_area_epims_kew.plot(column='Proprietor Name (1)', legend=True, figsize=(30, 20), ax=ax)
+polygon_ccod_area_epims_kew['Proprietor Name (1)'].unique()
+
+# COMMAND ----------
+
+polygon_ccod_area_epims_kew[polygon_ccod_area_epims_kew['Proprietor Name (1)']=='ARDINGLY ACTIVITY CENTRE LIMITED'].explore()
+
+# COMMAND ----------
+
+fig, ax = plt.subplots(figsize=(9, 20))
+ax1 = polygon_ccod_area_epims_kew.plot(column='Proprietor Name (1)', legend=True, figsize=(50, 30), ax=ax, cmap='tab20')
 ax2 = epims_rbk.boundary.plot(color='black', ax=ax)
 ax.set_xticks([])
+ax.set_yticks([])
 leg = ax1.get_legend()
-leg.set_bbox_to_anchor((0., 0., 4., 1.))
+leg.get_frame().set_alpha(0)
+#leg.set_loc('upper left')
+leg.frameon = False
+leg.set_bbox_to_anchor((0., 0., 2, 1))
 plt.show()
 
 # COMMAND ----------
