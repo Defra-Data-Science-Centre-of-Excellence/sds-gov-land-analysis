@@ -21,7 +21,7 @@ national_polygon_paths = [
 
 # created inputs
 national_polygon_parquet_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/national_polygon_dataset.parquet'
-polygon_ccod_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/polygon_ccod.parquet'
+polygon_ccod_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/hmlr_data/polygon_ccod.parquet'
 
 # COMMAND ----------
 
@@ -41,6 +41,10 @@ nps_by_study_area_directory_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine
 
 # COMMAND ----------
 
+defra_names_csv_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/defra_found_names.csv"
+
+# COMMAND ----------
+
 ccod_defra_and_alb_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/ccod_of_interest_defra_and_albs_fc_sorted.csv"
 
 # COMMAND ----------
@@ -52,6 +56,10 @@ ccod_defra_and_alb_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@
 
 ccod_defra_path = ""
 polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/nps_outputs/polygon_ccod_defra_3.geojson'
+
+polygon_ccod_defra_by_organisation_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/nps_outputs/polygon_ccod_defra_by_organisation.parquet'
+
+polygon_ccod_defra_by_organisation_tenure_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/nps_outputs/polygon_ccod_defra_by_organisation_tenure.parquet'
 
 # COMMAND ----------
 
@@ -65,6 +73,15 @@ polygon_ccod_fe_unfiltered_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.
 # COMMAND ----------
 
 csv_area_df_polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/outputs/area_by_organisation_from_hmlr_data.csv'
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Validation data
+
+# COMMAND ----------
+
+overlap_with_non_defra_estate_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/validation/overlap_with_non_defra_estate.parquet'
 
 # COMMAND ----------
 

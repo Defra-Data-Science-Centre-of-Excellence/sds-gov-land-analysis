@@ -54,12 +54,12 @@ polygon_ccod = gpd.read_parquet(polygon_ccod_path)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Comparison to Piumi's work
+# MAGIC #### EA data comparison
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### EA data comparison
+# MAGIC ##### Import data
 
 # COMMAND ----------
 
@@ -74,8 +74,18 @@ ea_ccod = polygon_ccod_defra[polygon_ccod_defra['current_organisation'] == 'Envi
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##### Comparison
+
+# COMMAND ----------
+
 # join selected ea ccod data to ea title list (on title number) to enable comparison
 ea_ccod_and_supplied_titles = ea_ccod.merge(ea_titles, how='outer', left_on='Title Number', right_on='Title', suffixes=('_filtered_ccod','_ea'))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### get titles not identified by our method
 
 # COMMAND ----------
 
@@ -112,13 +122,7 @@ uuwl_ccod['Proprietor (1) Address (1)'].unique()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Need to get the area of these?
-
-# COMMAND ----------
-
-ea = polygon_ccod_defra[polygon_ccod_defra['current_organisation']=='Environment Agency']
-ea_leasehold = ea[ea['Tenure']=='Leasehold']
-ea_leasehold
+# MAGIC ##### Get extra identified titles
 
 # COMMAND ----------
 
@@ -249,6 +253,10 @@ display(ne_titles_not_in_ownership)
 
 # COMMAND ----------
 
+# no core defra data found
+
+# COMMAND ----------
+
 defra_ccod = ccod_of_interest[ccod_of_interest['Current_organisation'] == 'Department for Environment, Food and Rural Affairs']
 
 # COMMAND ----------
@@ -260,6 +268,11 @@ print(len(defra_proposed_title_numbers))
 
 # MAGIC %md
 # MAGIC ### Forestry Commission data comparison
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### import data
 
 # COMMAND ----------
 
@@ -279,13 +292,13 @@ potential_fc_polygon_ccod = polygon_ccod_defra[polygon_ccod_defra['current_organ
 # COMMAND ----------
 
 # create buffered version to manage edge effects (FC data seems to have excess boundary a lot of the time) - would it be better to remove after sjoin by title number?
-potential_fc_polygon_ccod_buffered = potential_fc_polygon_ccod
-potential_fc_polygon_ccod_buffered.geometry = potential_fc_polygon_ccod_buffered.geometry.buffer(-2)
+fc_polygon_ccod_buffered = fc_polygon_ccod
+fc_polygon_ccod_buffered.geometry = fc_polygon_ccod_buffered.geometry.buffer(-2)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### FE Land ownership data
+# MAGIC ##### Comparison to FE Land ownership data
 
 # COMMAND ----------
 
@@ -305,7 +318,7 @@ fc_registration_polygons
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Get ccod info on all fc registrations to help delineate defra and fe parcels
+# MAGIC ###### Get ccod info on all fc registrations to help delineate defra and fe parcels
 
 # COMMAND ----------
 
@@ -324,7 +337,7 @@ fc_registration_polygons['propriet_2'].value_counts()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Comparison to registrations data (extract of HMLR data) by title number
+# MAGIC ##### Comparison to registrations data (extract of HMLR data) by title number
 
 # COMMAND ----------
 
@@ -422,7 +435,7 @@ fc_ownership_polygons.geom_type.unique()
 # remove records with no geometry
 fc_ownership_polygons = fc_ownership_polygons[~fc_ownership_polygons.geometry.is_empty]
 # add a small buffer (needed to prevent non-noded intersection linestring error in overlay )
-fc_ownership_polygons.geometry = fc_ownership_polygons.geometry.buffer(0.01)
+fc_ownership_polygons.geometry = fc_ownership_polygons.geometry.buffer(0.000000000001)
 
 # COMMAND ----------
 
@@ -437,16 +450,16 @@ fc_ownership_polygons.geometry = fc_ownership_polygons.geometry.buffer(0.01)
 # COMMAND ----------
 
 # get polygon layer of spatial differences between datasets - unbuffered polygon-ccod
-fc_polygons_not_overlapping_potential_fc_polygon_ccod = fc_ownership_polygons.overlay(potential_fc_polygon_ccod, how='difference', keep_geom_type=False, make_valid=True)
-potential_fc_polygon_ccod_not_overlapping_fc_polygons = potential_fc_polygon_ccod.overlay(fc_ownership_polygons, how='difference', keep_geom_type=False, make_valid=True)
+fc_polygons_not_overlapping_potential_fc_polygon_ccod = fc_ownership_polygons.overlay(fc_polygon_ccod, how='difference', keep_geom_type=False, make_valid=True)
+potential_fc_polygon_ccod_not_overlapping_fc_polygons = fc_polygon_ccod.overlay(fc_ownership_polygons, how='difference', keep_geom_type=False, make_valid=True)
 # get polygon layer of spatial similarities between datasets
-potential_fc_polygon_ccod_overlapping_fc_polygons = potential_fc_polygon_ccod.overlay(fc_ownership_polygons, how='intersection', keep_geom_type=False, make_valid=True)
+potential_fc_polygon_ccod_overlapping_fc_polygons = fc_polygon_ccod.overlay(fc_ownership_polygons, how='intersection', keep_geom_type=False, make_valid=True)
 
 # COMMAND ----------
 
-print(f'Area covered by FC provided dataset but not hmlr derrived data: {fc_polygons_not_overlapping_potential_fc_polygon_ccod.area.sum()}')
-print(f'Area covered by hmlr derrived data but not in FC provided dataset: {potential_fc_polygon_ccod_not_overlapping_fc_polygons.area.sum()}')
-print(f'Overlapping area: {potential_fc_polygon_ccod_overlapping_fc_polygons.area.sum()}')
+print(f'Area covered by FC provided dataset but not hmlr derrived data: {fc_polygons_not_overlapping_potential_fc_polygon_ccod.area.sum()/10000}')
+print(f'Area covered by hmlr derrived data but not in FC provided dataset: {potential_fc_polygon_ccod_not_overlapping_fc_polygons.area.sum()/10000}')
+print(f'Overlapping area: {potential_fc_polygon_ccod_overlapping_fc_polygons.area.sum()/10000}')
 
 # COMMAND ----------
 
@@ -460,16 +473,16 @@ fc_polygons_not_overlapping_potential_fc_polygon_ccod.to_file(fc_polygons_not_ov
 # COMMAND ----------
 
 # get polygon layer of spatial differences between datasets - buffered polygon-ccod
-fc_polygons_not_overlapping_potential_fc_polygon_ccod_buffered = fc_ownership_polygons.overlay(potential_fc_polygon_ccod_buffered, how='difference', keep_geom_type=False, make_valid=True)
-potential_fc_polygon_ccod_buffered_not_overlapping_fc_polygons = potential_fc_polygon_ccod_buffered.overlay(fc_ownership_polygons, how='difference', keep_geom_type=False, make_valid=True)
+fc_polygons_not_overlapping_potential_fc_polygon_ccod_buffered = fc_ownership_polygons.overlay(fc_polygon_ccod_buffered, how='difference', keep_geom_type=False, make_valid=True)
+potential_fc_polygon_ccod_buffered_not_overlapping_fc_polygons = fc_polygon_ccod_buffered.overlay(fc_ownership_polygons, how='difference', keep_geom_type=False, make_valid=True)
 # get polygon layer of spatial similarities between datasets
-potential_fc_polygon_ccod_buffered_overlapping_fc_polygons = potential_fc_polygon_ccod.overlay(fc_ownership_polygons, how='intersection', keep_geom_type=False, make_valid=True)
+potential_fc_polygon_ccod_buffered_overlapping_fc_polygons = fc_polygon_ccod.overlay(fc_ownership_polygons, how='intersection', keep_geom_type=False, make_valid=True)
 
 # COMMAND ----------
 
-print(f'Area covered by FC provided dataset but not hmlr derrived data: {fc_polygons_not_overlapping_potential_fc_polygon_ccod_buffered.area.sum()}')
-print(f'Area covered by hmlr derrived data but not in FC provided dataset: {potential_fc_polygon_ccod_buffered_not_overlapping_fc_polygons.area.sum()}')
-print(f'Overlapping area: {potential_fc_polygon_ccod_buffered_overlapping_fc_polygons.area.sum()}')
+print(f'Area covered by FC provided dataset but not hmlr derrived data: {fc_polygons_not_overlapping_potential_fc_polygon_ccod_buffered.area.sum()/10000}')
+print(f'Area covered by hmlr derrived data but not in FC provided dataset: {potential_fc_polygon_ccod_buffered_not_overlapping_fc_polygons.area.sum()/10000}')
+print(f'Overlapping area: {potential_fc_polygon_ccod_buffered_overlapping_fc_polygons.area.sum()/10000}')
 
 # COMMAND ----------
 
@@ -480,34 +493,3 @@ fc_polygons_not_overlapping_potential_fc_polygon_ccod_buffered.to_file(fc_polygo
 # Find in ccod fc/defra titles which have been identified by my script, but aren't in list from fc. Don't need to join back to unfiltered ccod data here as it should already be present from filtered ccod data.
 extra_identified_fc_titles = fc_ccod_and_supplied_titles[fc_ccod_and_supplied_titles['TITLE_NO'].isna()]
 extra_identified_fc_titles
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### EPIMS
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Plotting
-
-# COMMAND ----------
-
-import folium
-
-# COMMAND ----------
-
-fe_title_polygons_half = fe_title_polygons[1:1000]
-
-# COMMAND ----------
-
-m = folium.Map(location=(53, -3), zoom_start= 6, tiles="cartodb positron")
-folium.GeoJson(fe_title_polygons_half).add_to(m)
-
-# COMMAND ----------
-
-m

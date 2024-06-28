@@ -1,10 +1,20 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC #### Setup
+
+# COMMAND ----------
+
 import geopandas as gpd
 
 # COMMAND ----------
 
 # MAGIC %run
 # MAGIC ./paths
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Import data
 
 # COMMAND ----------
 
@@ -38,8 +48,18 @@ ccod = pd.read_csv(
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC #### Join ccod to national polygon dataset
+
+# COMMAND ----------
+
 # join polygon dataset with unfiltered ccod data - need this to look at adjascent polyogon info etc.
 polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', right_on='Title Number')
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Export polygon-ccod as parquet
 
 # COMMAND ----------
 

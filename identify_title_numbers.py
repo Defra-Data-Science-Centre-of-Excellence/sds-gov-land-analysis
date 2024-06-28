@@ -59,7 +59,7 @@ def get_fuzzy_match_min_score(string_to_search: str, match_options: list):
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Set file paths
+# MAGIC ##### Set file paths
 
 # COMMAND ----------
 
@@ -68,8 +68,13 @@ def get_fuzzy_match_min_score(string_to_search: str, match_options: list):
 
 # COMMAND ----------
 
+# MAGIC %run
+# MAGIC ./constants
+
+# COMMAND ----------
+
 # MAGIC %md
-# MAGIC #### Import CCOD data
+# MAGIC #### Import CCOD (UK Companies which own properties in England and Wales) data
 
 # COMMAND ----------
 
@@ -101,14 +106,6 @@ ccod.head()
 
 # COMMAND ----------
 
-ccod[ccod['Proprietor Name (2)'].str.contains('bristol', case=False, na=False)]
-
-# COMMAND ----------
-
-ccod[ccod['Proprietor Name (2)'].str.contains('bristol', case=False, na=False)]
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC
 
@@ -130,7 +127,7 @@ cs_department_identifiers = ['state', 'secretary', 'ministry', 'minister', 'depa
 # department specific identifiers
 all_cs_department_name_identifiers = ['environment','food','rural', 'agriculture', 'resources', 'fisheries']
 
-# This method produces too many outputs, as the search parameters become too wide, but could be more useful for other departments
+# The alternative method to generate identifiers (below) produces too many outputs, as the search parameters become too wide, but could be more useful for other departments
 
 #cs_department_names = {
 #    'Department for Environment, Food and Rural Affairs':
@@ -147,7 +144,7 @@ all_cs_department_name_identifiers = ['environment','food','rural', 'agriculture
 
 # COMMAND ----------
 
-# find some defra data for reference using or-and-or method
+# find defra proprietor names in ccod data using or-and-or method
 ccod_filtered = ccod.loc[ccod['Proprietor Name (1)'].str.contains('|'.join(cs_department_identifiers), case=False, na=False)]
 ccod_filtered = ccod_filtered.loc[ccod_filtered['Proprietor Name (1)'].str.contains('|'.join(all_cs_department_name_identifiers), case=False, na=False)]
 #ccod_filtered = ccod_filtered.loc[ccod_filtered['Proprietorship Category (1)'].str.contains('Corporate Body', case=False, na=False)]
@@ -160,6 +157,7 @@ defra_names = ccod_filtered['Proprietor Name (1)'].unique()
 
 # COMMAND ----------
 
+# display for visual inspection
 defra_names_df = pd.DataFrame(defra_names)
 display(defra_names_df)
 
@@ -176,16 +174,23 @@ defra_names_df = defra_names_df[~defra_names_df[0].isin(estate_names[0])]
 
 # COMMAND ----------
 
-display(defra_names_df)
-
-# COMMAND ----------
-
+# remove any other spurious names by adding to to_remove list
 to_remove = ['STATESIDE FOODS LIMITED', 'OUR ENVIRONMENTAL DEPARTMENT LIMITED']
 defra_names_df = defra_names_df[~defra_names_df[0].isin(to_remove)]
 
 # COMMAND ----------
 
 # Output identified names for manual QA
+display(defra_names_df)
+
+# COMMAND ----------
+
+# remove any 'duplicates' within the name list (where the only discrepancy is a small typo), so the typo search does not search the same thing multiple times
+to_remove = ['THE SECRETARY OF STATE FOR THE ENVIRONMENT', 'THE MINISTER OF AGRICULTURE, FISHERIES AND FOOD', 'THE SECRETARY OF STATE FOR ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR FOOD ENVIRONMENT AND RURAL AFFAIRS', 'SECRETARY OF STATE  FOR ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE MINISTER OF AGRICULTURE FISHERIES AND FOODS', 'SECRETARY OF STATE FOR THE ENVIRONMENT TRANSPORT AND THE REGIONS>','THE SECRETARY OF STATE FOR THE DEPARTMENT OF THE ENVIRONMENT, FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR THE DEPARTMENT FOR ENVIRONMENT, FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR THE DEPARTMENT OF THE ENVIRONMENT, FOOD AND RURAL AFFAIRS (DEFRA)', 'THE SECRETARY OF STATE FOR THE DEPARTMENT OF THE ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR ENVIRONMENT, FOOD AND RURAL AFFAIRS', 'SECRETARY OF STATE FOR ENVIRONMENT FOOD AND RURAL  AFFAIRS', 'THE SECRETARY OF STATE FOR THE ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR THE ENVIRONMENT, FOOD AND RURAL AFFAIRS']
+defra_names_df = defra_names_df[~defra_names_df[0].isin(to_remove)]
+
+# COMMAND ----------
+
 display(defra_names_df)
 
 # COMMAND ----------
@@ -635,19 +640,22 @@ cs_department_found_name_translation_dict = {'THE SECRETARY OF STATE FOR ENVIRON
 
 # COMMAND ----------
 
-
+# add all found names to set (placing in set will remove any duplicates)
 defra_found_names = set()
 for value in cs_department_found_name_translation_dict.values():
     defra_found_names.update(value)
 
 # COMMAND ----------
 
-defra_found_names
+# have a look at the produced list
+print(defra_found_names)
+print(len(defra_found_names))
+defra_names = defra_found_names
 
 # COMMAND ----------
 
-print(len(defra_found_names))
-defra_names = defra_found_names
+# if needed, output to csv here
+defra_names.to_csv(defra_names_csv_path)
 
 # COMMAND ----------
 
@@ -656,7 +664,7 @@ defra_names = defra_found_names
 
 # COMMAND ----------
 
-# Populate new 'Current Organsiation' field with Department name
+# Populate new 'Current Organsiation' field with Department name. For this step, using all proprietor fields although this didn't find any records based on non-primary proprietors anyway
 for name in defra_names:
     ccod.loc[ccod['Proprietor Name (1)'] == name, 'current_organisation'] = 'Department for Environment, Food and Rural Affairs'
     ccod.loc[ccod['Proprietor Name (2)'] == name, 'current_organisation'] = 'Department for Environment, Food and Rural Affairs'
@@ -666,6 +674,7 @@ display(ccod)
 
 # COMMAND ----------
 
+# filter based on newly identified defra records
 display(ccod[ccod['current_organisation'].notnull()])
 
 # COMMAND ----------
@@ -680,139 +689,12 @@ display(ccod[ccod['current_organisation'].notnull()])
 
 # COMMAND ----------
 
-''' 
-hierarchical nested translation dict in the format:{
-    'Current organisation name':{
-        'organisation name instance (current or historic)': [list of found names associated with organisation name instance]
-    }
-}
-'organisation name instance (current or historic) is split by word and used for searching
-'''
-
-alb_found_names_translation_dict = {
-    'Natural England':{
-        'Natural England': [],
-        'English Nature': [],
-        'Countryside Agency': [],
-        'Rural Development Service': [],
-        'Nature Conservancy Council': [],
-    },
-    'Joint Nature Conservation Committee':{
-        'Joint Nature Conservation Committee': [],
-    },
-    'Environment Agency':{
-        'Environment Agency': [],
-    },
-    'Rural Payments Agency':{
-        'Rural Payments Agency': [],
-    },
-    'Royal Botanic Gardens Kew':{
-        'Royal Botanic Gardens, Kew': [],
-    },
-    'Agriculture and Horiculture Development Board':{
-        'Agriculture and Horiculture Development Board': [],
-    },
-    'Animal, Plant Health Agency':{
-        'Animal Plant Health Agency': [],
-        'Animal Health and Veterinary Laboratories Agency': [],
-        'Animal Health': [],
-        'Plant Health Inspectorate': [],
-        'Plant Varieties and Seeds': [],
-        'National Bee Unit': [],
-        'GM Inspectorate': [], 
-    },
-    'Marine Management Organisation':{
-        'Marine Management Organisation': [],
-    },
-    'Forestry Commission':{
-        'Forestry Commission': [],
-        'Forestry England': [],
-        'Forestry Research': [],
-    },
-    'The Water Services Regulation Authority':{
-        'The Water Services Regulation Authority': [],
-    },
-    'Centre for Environment, Fisheries and Aquaculture Science':{
-        'Centre for Environment, Fisheries and Aquaculture Science': [],
-    },
-    'Veterinary Medicines Directorate':{
-        'Veterinary Medicines Directorate': [],
-    },
-    'Consumer Council for Water':{
-        'Consumer Council for Water': [],
-    },
-    'Office for Environmental Protection':{
-        'Office for Environmental Protection': [],
-    },
-    'Seafish':{
-        'Seafish': [],
-    },
-    'Advisory Committee on Releases to the Environment':{
-        'Advisory Committee on Releases to the Environment': [],
-    },  
-    # check this is okay
-    'Defra\'s Science Advisory Council':{
-        'Defra\'s Science Advisory Council': [],
-    },
-    'Independent Agricultural Appeals Panel':{
-        'Independent Agricultural Appeals Panel': [],
-    },
-    'Veterinary Products Committee':{
-        'Veterinary Products Committee': [],
-    },
-    'Plant Varieties and Seeds Tribunal':{
-        'Plant Varieties and Seeds Tribunal': [],
-    },
-    'British Wool':{
-        'British Wool': [],
-    },
-    'Broads Authority':{
-        'Broads Authority': [],
-    },
-    'Covent Garden Market Authority':{
-        'Covent Garden Market Authority': [],
-    },
-    'Dartmoor National Park Authority':{
-        'Dartmoor National Park Authority': [],
-    },
-    'Exmoor National Park Authority':{
-        'Exmoor National Park Authority': [],
-    },
-    'Flood Re':{
-        'Flood Re': [],
-    },
-    'Lake District National Park Authority':{
-        'Lake District National Park Authority': [],
-    },
-    'National Forest Company':{
-        'National Forest Company': [],
-    },
-    'New Forest National Park Authority':{
-        'New Forest National Park Authority': [],
-    },
-    'North York Moors National Park Authority':{
-        'North York Moors National Park Authority': [],
-    },
-    'Northumberland National Park Authority':{
-        'Northumberland National Park Authority': [],
-    },
-    'Peak District National Park Authority':{
-        'Peak District National Park Authority': [],
-    },
-    'South Downs National Park Authority':{
-        'South Downs National Park Authority': [],
-    },
-    'Yorkshire Dales National Park Authority':{
-        'Yorkshire Dales National Park Authority': [],
-    },
-}
-
-# COMMAND ----------
-
+# need to convert proprietor name field to a scring for the next step
 ccod["Proprietor Name (1)"] = ccod["Proprietor Name (1)"].astype(str)
 
 # COMMAND ----------
 
+# get found names for all search terms in translation dict (typo resilient search)
 for current_org, org_names in alb_found_names_translation_dict.items():
     for org_name in org_names:
         if org_name != '':
@@ -828,37 +710,54 @@ display(alb_found_names_translation_dict)
 
 # OLD METHOD - DOESN'T ACCOUNT FOR TYPOS
 # find likely names to populate translation dict
-regex_str = r'^{}'
-expression = '(?=.*{})'
-for current_org, org_names in alb_found_names_translation_dict.items():
-    for org_name in org_names:
-        if org_name != '':
-            # identify titles registered under current name and tag with current and current organisation
-            compiled_regex_str = regex_str.format(''.join(expression.format(word) for word in org_name.split(' ')))
-            ccod_filtered = ccod[ccod['Proprietor Name (1)'].str.contains(f'{compiled_regex_str}', case=False, na=False)]
-            found_names = ccod_filtered['Proprietor Name (1)'].unique()
-            # add found potential name to translation dict
-            alb_found_names_translation_dict[current_org][org_name] = found_names.tolist()
-display(alb_found_names_translation_dict)
+#regex_str = r'^{}'
+#expression = '(?=.*{})'
+#for current_org, org_names in alb_found_names_translation_dict.items():
+#    for org_name in org_names:
+#        if org_name != '':
+#            # identify titles registered under current name and tag with current and current organisation
+#            compiled_regex_str = regex_str.format(''.join(expression.format(word) for word in org_name.split(' ')))
+#            ccod_filtered = ccod[ccod['Proprietor Name (1)'].str.contains(f'{compiled_regex_str}', case=False, na=False)]
+#            found_names = ccod_filtered['Proprietor Name (1)'].unique()
+#            # add found potential name to translation dict
+#            alb_found_names_translation_dict[current_org][org_name] = found_names.tolist()
+#display(alb_found_names_translation_dict)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Output translation dict for manual QA
+# MAGIC ##### QA produced translation dictionary for Proprietor Name - Organisation translation
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ###### Output translation dict for manual QA
 
 # COMMAND ----------
 
 # produce df from translation dict for manual QA - this could be exported to csv for editing if needed
 alb_found_names_translation_df = pd.DataFrame.from_dict(alb_found_names_translation_dict, orient='columns')
-#alb_found_names_translation_df = pd.concat({k: pd.DataFrame(v, 'index') for k, v in alb_found_names_translation_dict.items()}, axis=0)
 display(alb_found_names_translation_df)
 
 
 # COMMAND ----------
 
-# Remove found name from translation dict
+# MAGIC %md
+# MAGIC ###### Remove incorrect found names from translation dict
+
+# COMMAND ----------
+
+# Functions to remove found names from translation dict
 
 def remove_found_name(current_organisation_name, organisation_instance_name, found_name_for_removal, alb_found_names_translation_dict):
+    '''
+    Remove specific found name for organsation/organisation instance
+    Parameters:
+        current_organisation (str): current name of the organisation the found name to remove is associated with
+        organisation_instance_name (str): instance (current or historic) name of the organisation the found name to remove is associated with
+        found_name_for_removal (str): found name to remove from translation dict # Could be useful to let this accept a list, which would remove the need for 'for loops' in the following cells
+        alb_found_names_translation_dict: alb found proprietor name - organisation translation dict
+    '''
     try:
         alb_found_names_translation_dict[current_organisation_name][organisation_instance_name].remove(found_name_for_removal)
         print(f'{found_name_for_removal} removed from current org: {current_organisation_name}, organisation instance: {organisation_instance_name}')
@@ -867,6 +766,12 @@ def remove_found_name(current_organisation_name, organisation_instance_name, fou
         print(f'WARNING: {found_name_for_removal} not found in current org: {current_organisation_name}, organisation instance: {organisation_instance_name}')
 
 def remove_all_found_names(current_organisation_name, alb_found_names_translation_dict):
+    '''
+    Remove all found names for an organisation
+        Parameters:
+        current_organisation (str): current name of the organisation to remove all found names for
+        alb_found_names_translation_dict: alb found proprietor name - organisation translation dict
+    '''
     for organisation_instance_name in alb_found_names_translation_dict[current_organisation_name].keys():
         alb_found_names_translation_dict[current_organisation_name][organisation_instance_name] = []
 
@@ -918,6 +823,7 @@ for name in seafish_wrong_names:
 
 # COMMAND ----------
 
+# output translation dict for final manual QA
 print(alb_found_names_translation_dict)
 
 # COMMAND ----------
@@ -928,11 +834,18 @@ print(alb_found_names_translation_dict)
 # COMMAND ----------
 
 # Use translation dict to add two new columns, populated with current and historic organisation names, based on matches with found names in the translation dict
+# As with department method, check all proprietor name fields for found names. As with department, only primary proprietor name results in identification
 for current_org_name, org_names in alb_found_names_translation_dict.items():
         for org_name, found_names in org_names.items():
             for found_name in found_names:
                 ccod.loc[ccod['Proprietor Name (1)'] == found_name, 'current_organisation'] = current_org_name
                 ccod.loc[ccod['Proprietor Name (1)'] == found_name, 'historic_organisation'] = org_name
+                ccod.loc[ccod['Proprietor Name (2)'] == found_name, 'current_organisation'] = current_org_name
+                ccod.loc[ccod['Proprietor Name (2)'] == found_name, 'historic_organisation'] = org_name
+                ccod.loc[ccod['Proprietor Name (3)'] == found_name, 'current_organisation'] = current_org_name
+                ccod.loc[ccod['Proprietor Name (3)'] == found_name, 'historic_organisation'] = org_name
+                ccod.loc[ccod['Proprietor Name (4)'] == found_name, 'current_organisation'] = current_org_name
+                ccod.loc[ccod['Proprietor Name (4)'] == found_name, 'historic_organisation'] = org_name
 
 # COMMAND ----------
 
@@ -941,7 +854,7 @@ display(ccod)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Filter to remove non defra/ALB data
+# MAGIC #### Filter to remove non defra/ALB data
 
 # COMMAND ----------
 
@@ -951,11 +864,15 @@ display(ccod_of_interest)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Disentangling forestry commission and DEFRA titles
+# MAGIC #### Disentangle forestry commission and DEFRA titles
 
 # COMMAND ----------
 
-# based on comparison to Forestry commission ownership data, search terms to delineate defra and FE titles have been identified, although these are not comprehensive as other identified search terms would also identify defra properties
+### Note: the relationship between land owned by Forestry England, Forestry Commission and Defra is very complicated. So it may not always be appropriate to try to separate FE and DEFRA land. It has been done here for the purpose of better understanding the data and practical management of the land
+
+# COMMAND ----------
+
+# based on comparison to Forestry commission ownership data, search terms to delineate defra and Forestry England titles have been identified, although these are not comprehensive as other identified search terms would also identify defra properties
 search_terms_list = [
     ['BS16','1EJ'],
     ['coldharbour'],
@@ -990,6 +907,7 @@ ccod_of_interest = ccod_of_interest.drop(columns=['min_match_ratio'])
 
 # COMMAND ----------
 
+# display for a quick double check before output
 display(ccod_of_interest)
 
 # COMMAND ----------
