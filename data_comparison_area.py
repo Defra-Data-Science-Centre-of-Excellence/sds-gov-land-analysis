@@ -64,8 +64,9 @@ epims_area_comparison
 # COMMAND ----------
 
 # report ready format for download
-epims_area_comparison['total_area_comparison'] = epims_area_comparison['total_area_hmlr'] - epims_area_comparison['land_area']
-epims_area_comparison = epims_area_comparison.sort_values(by='total_area_comparison', key=abs, ascending=False)
+epims_area_comparison['total_area_comparison'] = epims_area_comparison['total_area_hmlr'] - epims_area_comparison['land_buildings_area']
+epims_area_comparison['land_area_comparison']= epims_area_comparison['total_area_hmlr'] - epims_area_comparison['land_area']
+epims_area_comparison = epims_area_comparison.sort_values(by='land_area_comparison', key=abs, ascending=False)
 display(epims_area_comparison)
 
 # COMMAND ----------
