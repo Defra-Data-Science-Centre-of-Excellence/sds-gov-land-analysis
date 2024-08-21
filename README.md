@@ -16,13 +16,17 @@ This repo was created to extract DEFRA (and DEFRA Arms-Length Body) land parcel 
 
 [National Polygon Service](https://use-land-property-data.service.gov.uk/datasets/nps#polygon) datasets was used in this project. They are licenced to core DEFRA only, and were uploaded to a restricted workspace on the [DASH platform](https://defra.sharepoint.com/:u:/r/sites/Defraintranet/SitePages/The-Data-Analytics-and-Science-Hub-(DASH)-for-the-Defra-group.aspx?csf=1&web=1&e=nN4ncF) for analysis.
 
-EPIMS?
+[EPIMS](https://www.gov.uk/guidance/government-property-unit-electronic-property-information-mapping-service) was used for validation of the data product. Some of this data is available on [data.gov](https://www.data.gov.uk/dataset/c186e17f-654d-4134-aed7-b3f13469546a/central-government-welsh-ministers-and-local-government-including-property-and-land), but a more complete version was obtained from the cabinet office directly and added to the Restricted DASH Platform workspace.
 
-Anything else?
+Forestry England Land Registrations dataset was supplied directly by Forestry England to halp validate the data product. 
+
+Forestry England Ownerships dataset was supplied directly by Forestry England to help validate the data product.
+
+Natural England
 
 ### Licences
 
-A line or two about end user licence?
+The data product is licenced for full use by Core DEFRA staff only. To share the data product outside Core DEFRA a separate end user licence must be completed and shared with Naomi Lees.
 
 ## Scripts
 
