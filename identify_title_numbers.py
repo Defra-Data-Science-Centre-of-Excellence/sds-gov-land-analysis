@@ -21,6 +21,10 @@ from thefuzz import process
 
 # COMMAND ----------
 
+help('modules')
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ##### Define functions
 
@@ -106,8 +110,13 @@ ccod.head()
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC
+corporate_bodies = ccod[ccod['Proprietorship Category (1)']=='Corporate Body']
+display(pd.DataFrame(corporate_bodies['Proprietor Name (1)'].value_counts()).reset_index())
+
+# COMMAND ----------
+
+ccod['Proprietorship Category (1)'].value_counts()
+
 
 # COMMAND ----------
 

@@ -4,6 +4,16 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import plotly.express as px
+import matplotlib.ticker as mticker
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC pip install py-af-colours
+
+# COMMAND ----------
+
+from py_af_colours import af_colours
 
 # COMMAND ----------
 
@@ -27,7 +37,7 @@ pd.options.display.float_format = '{:.2f}'.format
 
 # COMMAND ----------
 
-alb_found_names_translation_dict.update({'Department for Environment, Food and Rural Affairs': None})
+alb_found_names_translation_dict.update({'Department for Environment, Food and Rural Affairs': None, 'Department for Environment, Food and Rural Affairs - managed by Forestry England or Forestry England': None})
 organisations_of_interest = alb_found_names_translation_dict.keys()
 
 
@@ -39,12 +49,46 @@ organisations_of_interest = alb_found_names_translation_dict.keys()
 # COMMAND ----------
 
 #import defra ccod-polygon data
-polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
+polygon_ccod_defra = gpd.read_parquet(polygon_ccod_defra_path)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Calculate total area for defra
+
+# COMMAND ----------
+
+# get total area
+polygon_ccod_defra.geometry = polygon_ccod_defra.geometry.make_valid()
+total_area = polygon_ccod_defra.dissolve().area.sum()/10000
+#dissolve by freehold/leasehold
+holding_dissolved_polygon_ccod = polygon_ccod_defra.dissolve(by='Tenure', as_index=False)
+freehold = holding_dissolved_polygon_ccod[holding_dissolved_polygon_ccod['Tenure'] == 'Freehold']
+freehold_area = freehold.area.sum()/10000
+leasehold = holding_dissolved_polygon_ccod[holding_dissolved_polygon_ccod['Tenure'] == 'Leasehold']
+leasehold_area = leasehold.area.sum()/10000
+
+# COMMAND ----------
+
+print(f'Total area: {total_area} hectares.')
+print(f'Freehold area: {freehold_area} hectares.')
+print(f'Leasehold area: {leasehold_area} hectares.')
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ##### Calculate area for all organisations of interest
+
+# COMMAND ----------
+
+# for these area calculations, we're in DEFRA land in the context of who manages it. So setting the current organisation to reflect this for 
+polygon_ccod_defra_fcfe = polygon_ccod_defra[polygon_ccod_defra['land_management_organisation']=='Forestry Commission or Forestry England']
+polygon_ccod_defra_fcfe['current_organisation'] = 'Department for Environment, Food and Rural Affairs - managed by Forestry England or Forestry England'
+polygon_ccod_defra_not_fcfe = polygon_ccod_defra[polygon_ccod_defra['land_management_organisation']!='Forestry Commission or Forestry England']
+
+# COMMAND ----------
+
+polygon_ccod_defra = pd.concat([polygon_ccod_defra_fcfe, polygon_ccod_defra_not_fcfe])
 
 # COMMAND ----------
 
@@ -82,7 +126,7 @@ non_zero_area_df = area_df[area_df['total_area']>0]
 
 # COMMAND ----------
 
-display(non_zero_area_df.sort_values(by='total_area', ascending=False))
+display(non_zero_area_df.sort_values(by='organisation', ascending=True))
 
 # COMMAND ----------
 
@@ -107,7 +151,21 @@ area_df.to_csv(csv_area_df_polygon_ccod_defra_path)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ##### read from csv
+
+# COMMAND ----------
+
+area_df = pd.read_csv(csv_area_df_polygon_ccod_defra_path)
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC #### Area plotting
+
+# COMMAND ----------
+
+# change the defra-fc/fe organisation name so it's shorter for display
+area_df = area_df.replace(to_replace={'organisation','Department for Environment, Food and Rural Affairs - managed by Forestry England or Forestry England'}, value='DEFRA (managed by Forestry England/Forestry Commission)')
 
 # COMMAND ----------
 
@@ -180,22 +238,26 @@ multiplier = 0
 
 fig, ax = plt.subplots(layout='constrained', figsize=(15,10))
 
+colours = af_colours("categorical", "hex", 3)
+i = 0
 for category, measurement in areas.items():
     offset = width * multiplier
-    rects = ax.barh(x + offset, measurement, width, label=category)
+    rects = ax.barh(x + offset, measurement, width, label=category, color=colours[i])
     #ax.bar_label(rects, padding=3)
     multiplier += 1
+    i = i + 1
 
 # Add some text for labels, title and custom x-axis tick labels, etc.
 ax.set_xlabel('Area (Ha)')
-ax.set_title(' Total, freehold and leasehold  land area for DEFRA and ALBs', y=1.03)
+#ax.set_xscale('symlog')
+ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
+ax.set_title('Total, freehold and leasehold  land area for DEFRA and ALBs', y=1.03)
 ax.set_yticks(x + width, organisations, rotation=0)
 handles, labels = ax.get_legend_handles_labels()
 order = [2,1,0]
-ax.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='upper center', ncols=3)
+ax.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='lower center', ncols=3)
 #ax.legend(loc='upper center', ncols=3)
 ax.set_ylim(0, 18)
-
 plt.show()
 
 # COMMAND ----------

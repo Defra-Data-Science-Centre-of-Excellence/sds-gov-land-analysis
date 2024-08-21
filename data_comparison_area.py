@@ -58,6 +58,10 @@ epims_area_comparison
 
 # COMMAND ----------
 
+epims_area_comparison = epims_area_comparison.fillna(0)
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ##### Produce table for report
 
@@ -71,8 +75,17 @@ display(epims_area_comparison)
 
 # COMMAND ----------
 
+display(epims_area_comparison)
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ##### Produce percentage difference figure
+
+# COMMAND ----------
+
+# change the defra-fc/fe organisation name so it's shorter for display
+epims_area_comparison = epims_area_comparison.replace(to_replace={'organisation','Department for Environment, Food and Rural Affairs - managed by Forestry England or Forestry England'}, value='DEFRA (managed by Forestry England/Forestry Commission)')
 
 # COMMAND ----------
 
