@@ -22,11 +22,13 @@ Forestry England Land Registrations dataset was supplied directly by Forestry En
 
 Forestry England Ownerships dataset was supplied directly by Forestry England to help validate the data product.
 
-Natural England
+Natural England title number list was supplied directly by Natural England to help validate the data product.
+
+Environment Agency title number list was supplied directly by the Environment Agency to help validate the data product.
 
 ### Licences
 
-The data product is licenced for full use by Core DEFRA staff only. To share the data product outside Core DEFRA a separate end user licence must be completed and shared with Naomi Lees.
+The data product is licenced for full use by Core DEFRA staff only. To share the data product outside Core DEFRA a separate end user licence must be completed and shared with Naomi Lees. Details on how to do this can be found in the [Project Overview document](https://defra.sharepoint.com/:w:/r/teams/Team1608/ESA%20Team%20Resources/Spatial%20Data%20Science/Workstreams/land_ownership/Outputs/Project%20overview.docx?d=wabee27591785443b81a9cd869553824b&csf=1&web=1&e=kvz0rY) on sharepoint.
 
 ## Scripts
 
