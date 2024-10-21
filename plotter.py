@@ -1,4 +1,10 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC ### Plotter
+# MAGIC Once 
+
+# COMMAND ----------
+
 # MAGIC %sh
 # MAGIC pip install geodatasets
 

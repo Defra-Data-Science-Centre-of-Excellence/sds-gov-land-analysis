@@ -1,5 +1,13 @@
 # Databricks notebook source
 # MAGIC %md
+# MAGIC ### Identify title numbers
+# MAGIC This script uses the UK Company Proprietor dataset (ccod) to produce a filtered version of the ccod with only titles of interest (ie. those associated with DEFRA or its ALBs). <br>
+# MAGIC Additional fields are added to the produced dataset to represent current and historic organisation of interest names. <br>
+# MAGIC Once the filtered version of the ccod has been produced this can be joined to the polygon geometries in the national polygon dataset for a spatial representation of DEFRA's land (use the identify_land_parcels script to do this)
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC #### Set up
 
 # COMMAND ----------
@@ -204,8 +212,9 @@ cs_department_found_name_translation_dict = {}
 
 # COMMAND ----------
 
-# Last run took 8 hours - this is really long - recommend removing as many versions of the defra names above which have typos as possible, to reduce run-time. Defra names with typos should be re-idnetified by the script below anyway. This can be checked.
-# Using name list produced, identify if theres are further potential names which contain typos
+# The last run of this took 8 hours - very slow!
+# I recommend removing as many versions of the defra names above which have typos (as opposed to different, historic names) as possible, to reduce run-time. 
+# Any names with typos should be re-identified by the script below.
 for defra_name in defra_names_df[0].tolist():
     if defra_name != '':
         ccod["min_match_ratio"] = ccod["Proprietor Name (1)"].apply(
@@ -218,7 +227,7 @@ display(cs_department_found_name_translation_dict)
 
 # COMMAND ----------
 
-#Stored version here can be useful if needed - poss should export to csv actually...
+#Stored version here can be useful if needed (so the 8 hour cell above doesn't need to be run!) - poss should export to csv actually...
 cs_department_found_name_translation_dict = {'THE SECRETARY OF STATE FOR ENVIRONMENT FOOD AND RURAL AFFAIRS': ['THE SECRETARY OF STATE FOR ENVIRONMENT FOOD AND RURAL AFFAIRS',
   'THE SECRETARY OF STATE FOR ENVIRONMENT, FOOD AND RURAL AFFAIRS',
   'THE SECRETARY OF STATE FOR  ENVIRONMENT FOOD AND RURAL AFFAIRS',
@@ -664,7 +673,7 @@ defra_names.to_csv(defra_names_csv_path)
 
 # COMMAND ----------
 
-# Populate new 'Current Organsiation' field with Department name. For this step, using all proprietor fields although this didn't find any records based on non-primary proprietors anyway
+# Populate new 'Current Organisation' field with Department name. For this step, using all proprietor fields although this didn't find any records based on non-primary proprietors anyway
 for name in defra_names:
     ccod.loc[ccod['Proprietor Name (1)'] == name, 'current_organisation'] = 'Department for Environment, Food and Rural Affairs'
     ccod.loc[ccod['Proprietor Name (2)'] == name, 'current_organisation'] = 'Department for Environment, Food and Rural Affairs'
@@ -689,11 +698,12 @@ display(ccod[ccod['current_organisation'].notnull()])
 
 # COMMAND ----------
 
-# need to convert proprietor name field to a scring for the next step
+# need to convert proprietor name field to a string for the next step
 ccod["Proprietor Name (1)"] = ccod["Proprietor Name (1)"].astype(str)
 
 # COMMAND ----------
 
+# approx 1 hour runtime
 # get found names for all search terms in translation dict (typo resilient search)
 for current_org, org_names in alb_found_names_translation_dict.items():
     for org_name in org_names:
@@ -765,6 +775,7 @@ def remove_found_name(current_organisation_name, organisation_instance_name, fou
     except:
         print(f'WARNING: {found_name_for_removal} not found in current org: {current_organisation_name}, organisation instance: {organisation_instance_name}')
 
+# Functions to remove all found names for single organisation from translation dict, created for easier manual qa implementation (use if on inspection all names for one organisation are incorrect. Otherwise use above function instead)
 def remove_all_found_names(current_organisation_name, alb_found_names_translation_dict):
     '''
     Remove all found names for an organisation
@@ -779,7 +790,6 @@ def remove_all_found_names(current_organisation_name, alb_found_names_translatio
 # COMMAND ----------
 
 remove_all_found_names('Animal, Plant Health Agency', alb_found_names_translation_dict)
-
 
 # COMMAND ----------
 
@@ -806,8 +816,6 @@ for name in fr_wrong_names:
 british_wool_wrong_names = ['ROYAL BRITISH LEGION WOOLSTON WITH MARTINSCROFT EX SERVICEMANS CLUB LIMITED', 'WOOL ROYAL BRITISH LEGION CLUB LIMITED',"BRITISH WOOL COMPANY (WEMBLEY) LIMITED","BRITISH WOOL MARKETING BOARD"]
 for name in british_wool_wrong_names:
     remove_found_name('British Wool', 'British Wool', name, alb_found_names_translation_dict)
-
-
 
 # COMMAND ----------
 

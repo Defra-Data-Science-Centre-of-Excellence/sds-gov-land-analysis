@@ -1,5 +1,14 @@
 # Databricks notebook source
 # MAGIC %md
+# MAGIC ### Identify land parcels
+# MAGIC Before running this script, ensure you have a filtered version of the CCOD representing just the organisations of interest (ie. have run the 'identify_title_numbers' script to produce a filtered CCOD for DEFRA and its ALBs) <br>
+# MAGIC This script will join the filtered ccod dataset to the national polygon service, providing a spatial represention of land ownership for DEFRA and its ALBs. <br>
+# MAGIC The produced dataset will not be flat (there may (probably!) be overlapping polygons where titles overlap). To create a flat multipolygon for each organisation, use the 'create_organisation_level_data' script. <br>
+# MAGIC Alternatively, to summarise this spatial dataset by area, use the 'area_calculations' script.
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC #### Setup
 
 # COMMAND ----------
@@ -60,6 +69,10 @@ polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', rig
 
 # MAGIC %md
 # MAGIC #### Optional: extract a study area portion of the NPS
+
+# COMMAND ----------
+
+# Working with the whole National Polygon Service dataset can be quite cumbersome, so this section allows you to 'cut' the NPS to a sample area (the sample area itself can be created using the 'create_study_boundary' script), and save the cut NPS as a parquet.
 
 # COMMAND ----------
 

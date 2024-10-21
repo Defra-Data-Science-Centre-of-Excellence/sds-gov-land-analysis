@@ -29,6 +29,7 @@ national_polygon = pd.concat(national_polygon_dfs, ignore_index=True)
 # COMMAND ----------
 
 # import unfiltered ccod data
+# limited to these defined fields as they were the ones which seemed useful, but more fields are available and could be added if needed
 ccod = pd.read_csv(
     ccod_path,    
     usecols=[
@@ -53,7 +54,7 @@ ccod = pd.read_csv(
 
 # COMMAND ----------
 
-# join polygon dataset with unfiltered ccod data - need this to look at adjascent polyogon info etc.
+# join polygon dataset with unfiltered ccod data - need this to look at adjascent polyogon info etc. The join is done on title number, which is present in both datasets for the purpose of a join key.
 polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', right_on='Title Number')
 
 # COMMAND ----------

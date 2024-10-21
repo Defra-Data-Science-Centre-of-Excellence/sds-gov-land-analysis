@@ -1,4 +1,13 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC ### Create organisation level data
+# MAGIC Before running this step, ensure you have a filtered version of the national polygon sdataset-ccod for your organisations of intereset (ie. you have run 'identify_title_numbers' and 'identify_land_parcels')<br>
+# MAGIC This script will create a flat version of your filtered dataset, creating a single flat multipolygon for each organisation and organisation-tenure combination.<br>
+# MAGIC Note: there may still be overlaps in the polygons between organisations after running this, but there will not be overlaps within an organisation (or organisation-tenure combo).<br>
+# MAGIC This script produces a spatial data product, for sharing with GIS users, and aid in display of the data.<br>
+
+# COMMAND ----------
+
 # MAGIC %run
 # MAGIC ./paths
 
