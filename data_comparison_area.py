@@ -1,7 +1,7 @@
 # Databricks notebook source
-'''
-Script to pull together created area dfs (created in area calculations and data comparison scripts) and produce comparison tables
-'''
+# MAGIC %md
+# MAGIC ### Data comparison area
+# MAGIC Script to pull together created area dfs (created in 'area_calculations' and 'data_comparison' scripts) and produce comparison tables
 
 # COMMAND ----------
 

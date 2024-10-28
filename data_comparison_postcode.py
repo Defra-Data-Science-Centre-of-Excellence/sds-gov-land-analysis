@@ -1,4 +1,10 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC ### Data comparison postcode
+# MAGIC To help validate alb vs defra records. Compare postcodes associated with alb land parcels with postcodes associated with defra records. This is to identify if/ help to disentangle defra and alb owned land parcels.
+
+# COMMAND ----------
+
 import re
 import pandas as pd
 import geopandas as gpd

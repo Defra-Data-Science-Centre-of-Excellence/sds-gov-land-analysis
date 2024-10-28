@@ -3,7 +3,7 @@
 # MAGIC ### Identify title numbers
 # MAGIC This script uses the UK Company Proprietor dataset (ccod) to produce a filtered version of the ccod with only titles of interest (ie. those associated with DEFRA or its ALBs). <br>
 # MAGIC Additional fields are added to the produced dataset to represent current and historic organisation of interest names. <br>
-# MAGIC Once the filtered version of the ccod has been produced this can be joined to the polygon geometries in the national polygon dataset for a spatial representation of DEFRA's land (use the identify_land_parcels script to do this)
+# MAGIC <b>Next steps:</b> Once the filtered version of the ccod has been produced this can be joined to the polygon geometries in the national polygon dataset for a spatial representation of DEFRA's land (use the identify_land_parcels script to do this)
 
 # COMMAND ----------
 

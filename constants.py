@@ -1,6 +1,8 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC
+# MAGIC ### Constants
+# MAGIC Defining variables which are useful throughout the workflow.
+# MAGIC This script is designed to be run from other scripts, so that variables can be defined once and changed easily.
 
 # COMMAND ----------
 

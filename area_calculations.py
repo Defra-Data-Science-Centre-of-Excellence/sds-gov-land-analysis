@@ -1,4 +1,14 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC ### Area calculations
+# MAGIC Produce a summary of the total area of freehold and leasehold (both together and separately) land owned by the organisations of interest. <br>
+# MAGIC Export this to a csv. <br>
+# MAGIC Produce bar plots of the produced area summaries. <br>
+# MAGIC <b>Prerequisites: </b> Before running this step, ensure you have produced a filtered version of the nps-ccod data, for your titles of interest (ie. have run 'identify_land_parcels') <br>
+# MAGIC
+
+# COMMAND ----------
+
 import geopandas as gpd
 import pandas as pd
 import numpy as np

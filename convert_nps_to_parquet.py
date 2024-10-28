@@ -1,5 +1,12 @@
 # Databricks notebook source
 # MAGIC %md
+# MAGIC ### Convert nps to parquet
+# MAGIC National polygon service used for this work was saved as series of shapefiles. This script converts them to a single parquet file for quicker read speeds. <br>
+# MAGIC It also joins the nps to the ccod data, and outputs into single data table.
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC #### Setup
 
 # COMMAND ----------

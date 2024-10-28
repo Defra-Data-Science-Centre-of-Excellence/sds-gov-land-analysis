@@ -1,9 +1,12 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC ### Identify land parcels
-# MAGIC Before running this script, ensure you have a filtered version of the CCOD representing just the organisations of interest (ie. have run the 'identify_title_numbers' script to produce a filtered CCOD for DEFRA and its ALBs) <br>
 # MAGIC This script will join the filtered ccod dataset to the national polygon service, providing a spatial represention of land ownership for DEFRA and its ALBs. <br>
-# MAGIC The produced dataset will not be flat (there may (probably!) be overlapping polygons where titles overlap). To create a flat multipolygon for each organisation, use the 'create_organisation_level_data' script. <br>
+# MAGIC The produced dataset will not be flat (there may (probably!) be overlapping polygons where titles overlap). <br>
+# MAGIC <b> Prerequirites: </b> Before running this script, ensure you have a filtered version of the CCOD representing just the organisations of interest (ie. have run the 'identify_title_numbers' script to produce a filtered CCOD for DEFRA and its ALBs) <br>
+# MAGIC <b>Next steps:</b> 
+# MAGIC To help validate the produced datasets, and identify potentially problematic overlaps, use the 'data_validation_overlaps' script.
+# MAGIC To create a flat multipolygon for each organisation, use the 'create_organisation_level_data' script. <br>
 # MAGIC Alternatively, to summarise this spatial dataset by area, use the 'area_calculations' script.
 
 # COMMAND ----------
