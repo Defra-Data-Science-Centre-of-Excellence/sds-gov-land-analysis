@@ -1,4 +1,16 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC ### Plotter
+# MAGIC Produce spatial plots of the land identified as owned by the organisations of interest. <br>
+# MAGIC <b> Prerequisites: </b> Before running this step, ensure you have produced a filtered version of the nps-ccod data, for your titles of interest (ie. have run 'identify_land_parcels') <br>
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Setup
+
+# COMMAND ----------
+
 # MAGIC %sh
 # MAGIC pip install geodatasets
 
