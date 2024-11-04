@@ -114,7 +114,7 @@ ccod.head()
 
 # COMMAND ----------
 
-ccod_filtered = ccod.loc[ccod['Proprietor Name (1)'].str.contains('|'.join(['airforce']), case=False, na=False)]
+ccod_filtered = ccod.loc[ccod['Proprietor Name (1)'].str.contains('|'.join(['diocese']), case=False, na=False)]
 ccod_filtered['Proprietor Name (1)'].unique()
 
 # COMMAND ----------

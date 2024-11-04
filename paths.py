@@ -52,12 +52,12 @@ nps_by_study_area_directory_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine
 # COMMAND ----------
 
 # Proprietor names identified as associated with DEFRA or its ALBs in the CCOD data
-defra_names_csv_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/mod_outputs/ccod_outputs/mod_found_names.csv"
+defra_names_csv_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/cofe_outputs/cofe_found_names.csv"
 
 # COMMAND ----------
 
 # CCOD records (including title  numbers) identified as aosciated with DEFRA or its ALBs
-ccod_defra_and_alb_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/mod_outputs/ccod_outputs/ccod_of_interest_mod_and_albs.csv"
+ccod_defra_and_alb_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/cofe_outputs/ccod_of_interest_cofe.csv"
 
 # COMMAND ----------
 
@@ -68,11 +68,11 @@ ccod_defra_and_alb_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@
 
 ccod_defra_path = ""
 # Polygon dataset for the land owned by DEFRA and its ALBs - one record per title
-polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/mod_outputs/polygon_ccod_mod.geojson'
+polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/cofe_outputs/polygon_ccod_cofe.geojson'
 # Polygon dataset for the land owned by DEFRA and its ALBs - dissolved so there is a single flat multipolygon for each organisation
-polygon_ccod_defra_by_organisation_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/mod_outputs/polygon_ccod_mod_by_organisation.parquet'
+polygon_ccod_defra_by_organisation_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/cofe_outputs/polygon_ccod_cofe_by_organisation.parquet'
 # Polygon dataset for the land owned by DEFRA and its ALBs - dissolved so there is a single flat multipolygon for each organisation-tenure combination
-polygon_ccod_defra_by_organisation_tenure_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/mod_outputs/polygon_ccod_mod_by_organisation_tenure.parquet'
+polygon_ccod_defra_by_organisation_tenure_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/cofe_outputs/polygon_ccod_cofe_by_organisation_tenure.parquet'
 
 # COMMAND ----------
 
@@ -86,7 +86,7 @@ polygon_ccod_fe_unfiltered_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.
 # COMMAND ----------
 
 # Summary of DEFRA and ALB land ownership by area
-csv_area_df_polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/mod_outputs/area_by_organisation_from_hmlr_data.csv'
+csv_area_df_polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/cofe_outputs/area_by_organisation_from_hmlr_data.csv'
 
 # COMMAND ----------
 
