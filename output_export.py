@@ -30,6 +30,10 @@ def download_link(filepath, convert_filepath=False):
 
 # COMMAND ----------
 
+display(download_link('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/outputs/poster_plot.png', convert_filepath=True))
+
+# COMMAND ----------
+
 display(download_link('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/validation/overlap_with_non_defra_estate_buffer_05.parquet', convert_filepath=True))
 
 # COMMAND ----------

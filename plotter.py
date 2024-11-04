@@ -113,6 +113,11 @@ import matplotlib.patches as mpatches
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##### Report plot
+
+# COMMAND ----------
+
 fig, ax = plt.subplots(layout='constrained', figsize=(15,10))
 ax.set_xticks([])
 ax.set_yticks([])
@@ -142,6 +147,55 @@ leg.get_frame().set_alpha(0)
 leg.set_loc('upper left')
 leg.frameon = False
 #leg.set_bbox_to_anchor((0., 0., 1.5, 1.009))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##### Poster plot
+
+# COMMAND ----------
+
+from textwrap import fill
+
+# COMMAND ----------
+
+all_defra_land.geometry = all_defra_land.geometry.buffer(200)
+
+# COMMAND ----------
+
+fig, ax = plt.subplots(layout='constrained', figsize=(15,10))
+ax.set_xticks([])
+ax.set_yticks([])
+ax = england_boundary.plot(legend=True, figsize=(20, 15), color='0.95', ax=ax)
+print(ax)
+colour_dict = {
+    'Department for Environment Food and Rural Affairs':'blue',
+    'DEFRA (managed by Forestry Commission or Forestry England)': 'forestgreen',
+    'Environment Agency':'red',
+    'Natural England':'gold',
+    'National Park Authority':'rebeccapurple',
+    'Royal Botanic Gardens, Kew': 'indianred',
+    'Other': 'cornflowerblue'
+ }
+colors = ['forestgreen', 'blue', 'red', 'rebeccapurple', 'gold','cornflowerblue', 'indianred']
+#ideally would be using colour dict values for this, but something is weird with the colour map order
+# colors = colour_dict.values()
+cmap1 = matplotlib.colors.ListedColormap(colors, name='from_list', N=None)
+ax = all_defra_land.plot(column='plot_organisation', legend=True, figsize=(20, 15), cmap=cmap1, ax=ax)
+#leg = ax.get_legend()
+#print(leg)
+#handles, labels = ax.get_legend_handles_labels()
+# create custom legend swatches/labels
+legend_patches = [mpatches.Patch(color=colour, label = fill(organisation, width=30)) for organisation, colour in colour_dict.items()]
+leg = ax.legend(handles=legend_patches, fontsize=14, labelspacing=1.5)
+leg.get_frame().set_alpha(0)
+leg.set_loc('upper left')
+leg.frameon = False
+#leg.set_bbox_to_anchor((0., 0., 1.5, 1.009))
+
+# COMMAND ----------
+
+fig.savefig('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/outputs/poster_plot.png')
 
 # COMMAND ----------
 

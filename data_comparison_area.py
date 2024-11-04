@@ -105,3 +105,7 @@ ax1.set_xlim(left=-1000, right=1000)
 ax1.set_xscale('linear')
 no_change_line = ax1.hlines(y=15, xmin=-1.5, xmax=1.5, linewidth=1000, colors='0.5')
 plt.show()
+
+# COMMAND ----------
+
+display(epims_area_comparison)
