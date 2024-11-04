@@ -16,120 +16,98 @@ hierarchical nested translation dict in the format:{
 '''
 
 alb_found_names_translation_dict = {
-    'Natural England':{
-        'Natural England': [],
-        'English Nature': [],
-        'Countryside Agency': [],
-        'Rural Development Service': [],
-        'Nature Conservancy Council': [],
+    'Defense Equipment and Support':{
+        'Defense Equipment and Support': [],
     },
-    'Joint Nature Conservation Committee':{
-        'Joint Nature Conservation Committee': [],
+    'Defence Science and Technology Laboratory':{
+        'Defence Science and Technology Laboratory': [],
     },
-    'Environment Agency':{
-        'Environment Agency': [],
+    'Submarine Delivery Agency':{
+        'Submarine Delivery Agency': [],
     },
-    'Rural Payments Agency':{
-        'Rural Payments Agency': [],
+    'UK Hydrographic Office':{
+        'UK Hydrographic Office': [],
     },
-    'Royal Botanic Gardens Kew':{
-        'Royal Botanic Gardens, Kew': [],
+    'Armed Forces Covenant Fund Trust':{
+        'Armed Forces Covenant Fund Trust': [],
     },
-    'Agriculture and Horticulture Development Board':{
-        'Agriculture and Horticulture Development Board': [],
+    'Atomic Weapons Establishment':{
+        'Atomic Weapons Establishment': [],
     },
-    'Animal, Plant Health Agency':{
-        'Animal Plant Health Agency': [],
-        'Animal Health and Veterinary Laboratories Agency': [],
-        'Animal Health': [],
-        'Plant Health Inspectorate': [],
-        'Plant Varieties and Seeds': [],
-        'National Bee Unit': [],
-        'GM Inspectorate': [], 
+    'National Army Museum':{
+        'National Army Museum': [],
     },
-    'Marine Management Organisation':{
-        'Marine Management Organisation': [],
+    'National Museum of the Royal Navy':{
+        'National Museum of the Royal Navy': [],
     },
-    'Forestry Commission':{
-        'Forestry Commission': [],
-        'Forestry England': [],
-        'Forestry Research': [],
-        'Forest Enterprise': [],
+    'Royal Airforce Museum':{
+        'Royal Airforce Museum': [],
     },
-    'The Water Services Regulation Authority':{
-        'The Water Services Regulation Authority': [],
+    'Single Source Regulations Office':{
+        'Single Source Regulations Office': [],
     },
-    'Centre for Environment, Fisheries and Aquaculture Science':{
-        'Centre for Environment, Fisheries and Aquaculture Science': [],
+    'Advisory Committee on Conscientious Objectors':{
+        'Advisory Committee on Conscientious Objectors': [],
     },
-    'Veterinary Medicines Directorate':{
-        'Veterinary Medicines Directorate': [],
+    'Armed Forces Pay Review Body':{
+        'Armed Forces Pay Review Body': [],
     },
-    'Consumer Council for Water':{
-        'Consumer Council for Water': [],
+    'Independent Medical Expert Group':{
+        'Independent Medical Expert Group': [],
     },
-    'Office for Environmental Protection':{
-        'Office for Environmental Protection': [],
+    'Nuclear Research Advisory Council':{
+        'Nuclear Research Advisory Council': [],
     },
-    'Seafish':{
-        'Seafish': [],
+    'Scientific Advisory Committee on the Medical Implications of Less-Lethal Weapons':{
+        'Scientific Advisory Committee on the Medical Implications of Less-Lethal Weapons': [],
     },
-    'Advisory Committee on Releases to the Environment':{
-        'Advisory Committee on Releases to the Environment': [],
+    'Veterans Advisory and Pensions Committees':{
+        'Veterans Advisory and Pensions Committees': [],
     },  
     # check this is okay
-    'Defra\'s Science Advisory Council':{
-        'Defra\'s Science Advisory Council': [],
+    'The Oil and Pipelines Agency':{
+        'The Oil and Pipelines Agency': [],
     },
-    'Independent Agricultural Appeals Panel':{
-        'Independent Agricultural Appeals Panel': [],
+    'Sheffield Forgemasters International Ltd':{
+        'Sheffield Forgemasters International Ltd': [],
     },
-    'Veterinary Products Committee':{
-        'Veterinary Products Committee': [],
+    'Advisory Group on Military and Emergency Response Medicine':{
+        'Advisory Group on Military and Emergency Response Medicine': [],
     },
-    'Plant Varieties and Seeds Tribunal':{
-        'Plant Varieties and Seeds Tribunal': [],
+    'Central Advisory Committee on Compensation':{
+        'Central Advisory Committee on Compensation': [],
     },
-    'British Wool':{
-        'British Wool': [],
+    'Defence Nuclear Safety Expert Committee':{
+        'Defence Nuclear Safety Expert Committee': [],
     },
-    'Broads Authority':{
-        'Broads Authority': [],
+    'Defence and Security Media Advisory Committee':{
+        'Defence and Security Media Advisory Committee': [],
     },
-    'Covent Garden Market Authority':{
-        'Covent Garden Market Authority': [],
+    'Reserve Forces\' and Cadets\' Associations (RFCA)':{
+        'Reserve Forces\' and Cadets\' Associations (RFCA)': [],
+        'Reserve Forces\' and Cadets\' Associations': [],
+        'The Territotial Army': [],
+        'Territorial and Army Volunteer Reserve': [],
+        'The Territorial Force': [],
     },
-    'Dartmoor National Park Authority':{
-        'Dartmoor National Park Authority': [],
+    'Service Complaints Ombudsman':{
+        'Service Complaints Ombudsman': [],
     },
-    'Exmoor National Park Authority':{
-        'Exmoor National Park Authority': [],
+    'Service Prosecuting Authority':{
+        'Service Prosecuting Authority': [],
     },
-    'Flood Re':{
-        'Flood Re': [],
+    'Defence Lands Service':{
+        'Defence Lands Service': [],
     },
-    'Lake District National Park Authority':{
-        'Lake District National Park Authority': [],
+    'Defence Council Instruction':{
+        'Defence Council Instruction': [],
     },
-    'National Forest Company':{
-        'National Forest Company': [],
+    'The Comptroller of Defence Lands (CDL)':{
+        'The Comptroller of Defence Lands (CDL)': [],
+        'The Comptroller of Defence Lands': [],
     },
-    'New Forest National Park Authority':{
-        'New Forest National Park Authority': [],
-    },
-    'North York Moors National Park Authority':{
-        'North York Moors National Park Authority': [],
-    },
-    'Northumberland National Park Authority':{
-        'Northumberland National Park Authority': [],
-    },
-    'Peak District National Park Authority':{
-        'Peak District National Park Authority': [],
-    },
-    'South Downs National Park Authority':{
-        'South Downs National Park Authority': [],
-    },
-    'Yorkshire Dales National Park Authority':{
-        'Yorkshire Dales National Park Authority': [],
-    },
+    'Chief Surveyor of Defence Lands (CSDL)':{
+        'Chief Surveyor of Defence Lands (CSDL)': [],
+        'Chief Surveyor of Defence Lands': [],
+    }
 }

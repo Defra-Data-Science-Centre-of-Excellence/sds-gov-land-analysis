@@ -37,7 +37,7 @@ pd.options.display.float_format = '{:.2f}'.format
 
 # COMMAND ----------
 
-alb_found_names_translation_dict.update({'Department for Environment, Food and Rural Affairs': None})
+alb_found_names_translation_dict.update({'Ministry of Defense': None})
 organisations_of_interest = alb_found_names_translation_dict.keys()
 
 
@@ -50,6 +50,10 @@ organisations_of_interest = alb_found_names_translation_dict.keys()
 
 #import defra ccod-polygon data
 polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
+
+# COMMAND ----------
+
+polygon_ccod_defra['historic_organisation'].unique()
 
 # COMMAND ----------
 
@@ -67,6 +71,8 @@ for organisation in organisations_of_interest:
     total_area = organisation_polygon_ccod.dissolve().area.sum()/10000
     #dissolve by freehold/leasehold
     holding_dissolved_polygon_ccod = organisation_polygon_ccod.dissolve(by='Tenure', as_index=False)
+    holding_dissolved_polygon_ccod.geometry = holding_dissolved_polygon_ccod.geometry.make_valid()
+    holding_dissolved_polygon_ccod.geometry = holding_dissolved_polygon_ccod.geometry.buffer(0.0000001)
     freehold = holding_dissolved_polygon_ccod[holding_dissolved_polygon_ccod['Tenure'] == 'Freehold']
     freehold_area = freehold.area.sum()/10000
     leasehold = holding_dissolved_polygon_ccod[holding_dissolved_polygon_ccod['Tenure'] == 'Leasehold']
@@ -85,6 +91,10 @@ for organisation in organisations_of_interest:
 
 # MAGIC %md
 # MAGIC ##### Get all non-zero areas for summary table in report
+
+# COMMAND ----------
+
+area_df
 
 # COMMAND ----------
 
