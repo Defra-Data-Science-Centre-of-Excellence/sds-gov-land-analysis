@@ -57,34 +57,17 @@ all_defra_land.current_organisation.unique()
 
 # add new column for plot display
 organisation_translation_dict = {
-    'Environment Agency': 'Environment Agency', 
-    'Forestry Commission': 'Forestry Commission',
-    'Peak District National Park Authority': 'National Park Authority', 
-    'Natural England': 'Natural England',
-    'Lake District National Park Authority': 'National Park Authority',
-    'Department for Environment, Food and Rural Affairs': 'Department for Environment, Food and Rural Affairs',
-    'North York Moors National Park Authority': 'National Park Authority',
-    'National Forest Company': 'Other', 
-    'Broads Authority': 'Other',
-    'Northumberland National Park Authority': 'National Park Authority',
-    'Covent Garden Market Authority': 'Other', 
-    'Exmoor National Park Authority': 'National Park Authority',
-    'Dartmoor National Park Authority': 'National Park Authority',
-    'Yorkshire Dales National Park Authority': 'National Park Authority',
-    'South Downs National Park Authority': 'National Park Authority',
-    'New Forest National Park Authority': 'National Park Authority',
-    'Royal Botanic Gardens Kew': 'Royal Botanic Gardens Kew',
-    'Agriculture and Horiculture Development Board': 'Other'
+    'Ministry of Defense': 'Ministry of Defense', 
+    "Reserve Forces' and Cadets' Associations (RFCA)": "Reserve Forces' and Cadets' Associations (RFCA)",
+    'National Army Museum': 'National Army Museum', 
+    'National Museum of the Royal Navy': 'National Museum of the Royal Navy',
 }
 
 rank_dict = {
-    'Department for Environment, Food and Rural Affairs': 0,
-    'Environment Agency': 1,
-    'Forestry Commission': 2,
-    'Royal Botanic Gardens Kew': 3,
-    'National Park Authority': 4,
-    'Natural England': 5,
-    'Other': 6
+    'Ministry of Defense': 0,
+    "Reserve Forces' and Cadets' Associations (RFCA)": 1,
+    'National Army Museum': 2,
+    'National Museum of the Royal Navy': 3,
 }
 
 all_defra_land['plot_organisation'] = all_defra_land['current_organisation']
