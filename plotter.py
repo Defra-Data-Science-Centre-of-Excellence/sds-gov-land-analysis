@@ -24,7 +24,7 @@
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import geodatasets
-import contextily as cx
+#import contextily as cx
 import matplotlib.colors
 
 # COMMAND ----------
@@ -57,14 +57,14 @@ all_defra_land.current_organisation.unique()
 
 # add new column for plot display
 organisation_translation_dict = {
-    'Ministry of Defense': 'Ministry of Defense', 
+    'Ministry of Defence': 'Ministry of Defence', 
     "Reserve Forces' and Cadets' Associations (RFCA)": "Reserve Forces' and Cadets' Associations (RFCA)",
     'National Army Museum': 'National Army Museum', 
     'National Museum of the Royal Navy': 'National Museum of the Royal Navy',
 }
 
 rank_dict = {
-    'Ministry of Defense': 0,
+    'Ministry of Defence': 0,
     "Reserve Forces' and Cadets' Associations (RFCA)": 1,
     'National Army Museum': 2,
     'National Museum of the Royal Navy': 3,

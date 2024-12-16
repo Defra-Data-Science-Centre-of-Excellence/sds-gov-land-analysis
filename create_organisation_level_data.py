@@ -23,21 +23,6 @@ polygon_ccod_defra.geometry = polygon_ccod_defra.geometry.make_valid()
 
 # COMMAND ----------
 
-polygon_ccod_defra[polygon_ccod_defra['Proprietor Name (1)'].str.contains('OUR ENVIRONMENTAL DEPARTMENT LIMITED')]
-
-# COMMAND ----------
-
-estate_names = polygon_ccod_defra[polygon_ccod_defra['Proprietor Name (1)'].str.contains('OUR ENVIRONMENTAL DEPARTMENT LIMITED')]
-estate_names = estate_names['Proprietor Name (1)'].unique()
-display(estate_names)
-polygon_ccod_defra = polygon_ccod_defra[~polygon_ccod_defra['Proprietor Name (1)'].isin(estate_names)]
-
-# COMMAND ----------
-
-polygon_ccod_defra.to_file(polygon_ccod_defra_path)
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC #### Create layer of total for each organisation
 
@@ -76,11 +61,11 @@ polygon_ccod_defra_by_organisation_tenure['area_ha'] = polygon_ccod_defra_by_org
 
 # COMMAND ----------
 
-polygon_ccod_defra_by_organisation_tenure.to_parquet(polygon_ccod_defra_by_organisation_tenure_path)
+polygon_ccod_defra_by_organisation_tenure
 
 # COMMAND ----------
 
-polygon_ccod_defra_by_organisation_tenure
+polygon_ccod_defra_by_organisation_tenure.to_parquet(polygon_ccod_defra_by_organisation_tenure_path)
 
 # COMMAND ----------
 

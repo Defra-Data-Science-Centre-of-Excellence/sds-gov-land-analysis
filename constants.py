@@ -109,5 +109,9 @@ alb_found_names_translation_dict = {
     'Chief Surveyor of Defence Lands (CSDL)':{
         'Chief Surveyor of Defence Lands (CSDL)': [],
         'Chief Surveyor of Defence Lands': [],
+    },
+    'Ministry of Defence':{
+        'Admiralty': [],
+        'War Office': [],
     }
 }

@@ -22,11 +22,11 @@ polygon_ccod = gpd.read_parquet(polygon_ccod_path)
 
 # COMMAND ----------
 
-polygon_ccod_defra.geometry = polygon_ccod_defra.geometry.make_valid()
+freehold_polygon_ccod_defra = polygon_ccod_defra[polygon_ccod_defra['Tenure']=='Freehold']
 
 # COMMAND ----------
 
-freehold_polygon_ccod_defra = polygon_ccod_defra[polygon_ccod_defra['Tenure']=='Freehold']
+leasehold_polygon_ccod_defra = polygon_ccod_defra[polygon_ccod_defra['Tenure']=='Leasehold']
 
 # COMMAND ----------
 
@@ -46,6 +46,11 @@ print(f'total area of defra and alb freehold land when nbot flattened/dissolveed
 
 dissolved_defra_freehold_area = freehold_polygon_ccod_defra.dissolve().area.sum()/10000
 print(f'total area of defra and alb freehold land: {dissolved_defra_freehold_area}')
+
+# COMMAND ----------
+
+dissolved_defra_leasehold_area = leasehold_polygon_ccod_defra.dissolve().area.sum()/10000
+print(f'total area of defra and alb leasehold land: {dissolved_defra_leasehold_area}')
 
 # COMMAND ----------
 
@@ -100,11 +105,6 @@ overlap_with_non_defra_estate
 # COMMAND ----------
 
 overlap_with_non_defra_estate.to_parquet(overlap_with_non_defra_estate_path)
-
-# COMMAND ----------
-
-overlap_with_non_defra_estate.area.sum()/10000
-
 
 # COMMAND ----------
 

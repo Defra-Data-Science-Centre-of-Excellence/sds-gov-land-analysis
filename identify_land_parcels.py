@@ -124,11 +124,51 @@ display(polygon_ccod_defra_only)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ##### Validate data
+
+# COMMAND ----------
+
+polygon_ccod_defra_only.geometry = polygon_ccod_defra_only.geometry.make_valid()
+
+# COMMAND ----------
+
+polygon_ccod_defra_only_simple = polygon_ccod_defra_only[polygon_ccod_defra_only.geom_type!='GeometryCollection'].reset_index(drop=True)
+polygon_ccod_defra_only_collection = polygon_ccod_defra_only[polygon_ccod_defra_only.geom_type=='GeometryCollection']
+
+# COMMAND ----------
+
+#Create a list of all geometries in each collection
+polygon_ccod_defra_only_collection["geometries"] = polygon_ccod_defra_only_collection.apply(lambda x: [g for g in x.geometry.geoms], axis=1)
+
+# COMMAND ----------
+
+polygon_ccod_defra_only_collection = polygon_ccod_defra_only_collection.explode(column="geometries").drop(columns="geometry").set_geometry("geometries").rename_geometry("geometry").reset_index(drop=True)
+polygon_ccod_defra_only_collection.geom_type.unique()
+
+# COMMAND ----------
+
+polygon_ccod_defra_only_collection = polygon_ccod_defra_only_collection[~polygon_ccod_defra_only_collection.geom_type.isin(['LineString', 'MultiLineString'])]
+
+# COMMAND ----------
+
+polygon_ccod_defra_only = pd.concat([polygon_ccod_defra_only_collection, polygon_ccod_defra_only_simple])
+
+# COMMAND ----------
+
+polygon_ccod_defra_only.geom_type.unique()
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ##### Export identified defra polygons
 
 # COMMAND ----------
 
 polygon_ccod_defra_only.to_file(polygon_ccod_defra_path, driver='GeoJSON', mode='w')
+
+# COMMAND ----------
+
+polygon_ccod_defra_only.to_parquet(polygon_ccod_defra_parquet_path)
 
 # COMMAND ----------
 
