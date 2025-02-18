@@ -167,18 +167,14 @@ from pathlib import Path
 
 # location for outputs
 par_path = Path(
-    "/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Assets"
+    "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Final/Asset_Tables"
 )
 
 alt_par_path = str(par_path).replace("/dbfs", "dbfs:")
 
 data_combined = sedona.read.format("parquet").load(
-    f"{alt_par_path}/10m_x_assets_combined_sparse.parquet"
+    f"{alt_par_path}/10m_x_assets_combined_arable.parquet"
 )
-
-# COMMAND ----------
-
-data_combined.display()
 
 # COMMAND ----------
 
@@ -187,17 +183,19 @@ from pyspark.sql import functions as F
 # COMMAND ----------
 
 # Set condition to find rows overlapping DGL (FH or LH)
-condition = (F.col("dgl_fh") == 1) | (F.col("dgl_lh") == 1)
+condition = ((F.col("dgl_fh") == 1) | (F.col("dgl_lh") == 1)) 
+
+# COMMAND ----------
+
+data_combined.display()
 
 # COMMAND ----------
 
 # Define which columns to combine into raster cell
 
-# Dense Woodland
-columns_to_sum = ["le_coniferous","le_deciduous","lcm_conif_wood","lcm_decid_wood","rpa_lc_woodland","nfi","phi_deciduous"]
+# Full
+columns_to_sum = ["le_comb","phi_comb","lcm_comb","crome"]
 
-# Sparse Woodland
-#columns_to_sum = ["le_scrub","wood_pasture_park","phi_orchard","fr_tow"]
 
 # COMMAND ----------
 
@@ -207,12 +205,8 @@ data_combined_score = data_combined.withColumn(
     F.when(
         condition,
         sum(F.coalesce(F.col(col), F.lit(0)) for col in columns_to_sum)  # Replace nulls with 0 before summing
-    ).otherwise(None)  # Optionally handle rows not meeting the condition
+    ) # Optionally handle rows not meeting the condition
 )
-
-# COMMAND ----------
-
-data_combined_score.display()
 
 # COMMAND ----------
 
@@ -293,7 +287,7 @@ transform = Affine(pixel_width, 0, top_left_x, 0, pixel_height, top_left_y)
 # shape of the raster
 shape = (70000, 70000)
 # out file path - has to be in `tmp` directory
-tif_file = "/tmp/dgl_woodland_sparse_sum_291124.tif"
+tif_file = "/tmp/dgl_arable_sum_20250215.tif"
 
 # COMMAND ----------
 

@@ -5,7 +5,9 @@
 # MAGIC
 # MAGIC Work out which 10 m grid squares intersect different layers (e.g. National Parks and AONBs)
 # MAGIC
-# MAGIC ### OS NGD Land Features - Woodland
+# MAGIC ###Master Version 
+# MAGIC
+# MAGIC Clone and update to run analysis
 
 # COMMAND ----------
 
@@ -21,6 +23,7 @@
 # COMMAND ----------
 
 from sedona.spark import *
+from pyspark.sql.functions import expr
 
 sedona = SedonaContext.create(spark)
 sqlContext.clearCache()
@@ -63,58 +66,48 @@ eng_combo_centroids.createOrReplaceTempView("eng_combo_centroids")
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ###Load in Conversion Data
+
+# COMMAND ----------
+
+import pandas as pd
+
+# COMMAND ----------
+
+codes = pd.read_csv('/dbfs/mnt/base/unrestricted/source_rpa_spatial_data_mart/dataset_rpa_land_cover_codes/format_CSV_rpa_land_cover_codes/LATEST_rpa_land_cover_codes/LOOKUP_LANDCOVERS_Asset_Mapping.csv')
+
+# COMMAND ----------
+
+codes.display()
+
+# COMMAND ----------
+
+code_list_full = [131, 233, 311, 322, 583]
+code_list_bog = [131]
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ### Update Cell Below
 
 # COMMAND ----------
 
-ngd_land_path = 'dbfs:/mnt/base/restricted/source_ordnance_survey_data_hub/dataset_ngd_land_features/format_GEOPARQUET_ngd_land_features/LATEST_ngd_land_features/*.parquet'
+focal_name_d = "rpa_lc_moorland_full"
+focal_name_s = "rpa_lc_moorland_bog"  
+
+focal_path = "dbfs:/mnt/base/unrestricted/source_rpa_spatial_data_mart/dataset_rpa_land_cover/format_GEOPARQUET_rpa_land_cover/LATEST_rpa_land_cover/land_cover.parquet"
+
+focal_column = 'LAND_COVER_CLASS_CODE'
 
 # COMMAND ----------
 
-ngd_land = spark.read.format("geoparquet").load(ngd_land_path)
+focal_layer = sedona.read.format("geoparquet").load(focal_path).withColumn("GEOM", expr("ST_MakeValid(GEOM)"))
 
-# COMMAND ----------
+focal_layer_d = focal_layer.filter(focal_layer[focal_column].isin(code_list_full)) # Optional Filter statement
+focal_layer_d.createOrReplaceTempView("focal_layer_d")
 
-ngd_land.display()
-
-# COMMAND ----------
-
-unique_values = ngd_land.select("description").distinct().collect()
-
-unique_values
-
-
-# oslandcovertierb = 'Heath,Rock,Rough Grassland,Scattered Coniferous Trees,Scattered Non-Coniferous Trees', 'Heath,Rock,Rough Grassland,Scattered Non-Coniferous Trees', 'Heath,Rough Grassland,Scattered Coniferous Trees,Scattered Non-Coniferous Trees', 
-
-# COMMAND ----------
-
-ngd_land_trees = ngd_land.filter(ngd_land["oslandcovertiera"] == "Trees")
-
-# COMMAND ----------
-
-from pyspark.sql import functions as F
-
-# COMMAND ----------
-
-ngd_land_trees_dense = ngd_land_trees.filter(
-    F.col("oslandcovertierb").startswith("Coniferous Trees") |
-    F.col("oslandcovertierb").startswith("Non-Coniferous Trees"))
-
-# COMMAND ----------
-
-ngd_land_trees_sparse = ngd_land_trees.filter(~(
-    F.col("oslandcovertierb").startswith("Coniferous Trees") |
-    F.col("oslandcovertierb").startswith("Non-Coniferous Trees")))
-
-# COMMAND ----------
-
-focal_name_dense = "os_ngd_land_trees_dense"
-focal_name_sparse = "os_ngd_land_trees_sparse" # used to name the layer in outputs
-
-# COMMAND ----------
-
-ngd_land_trees_dense.createOrReplaceTempView("focal_layer_D")
-ngd_land_trees_sparse.createOrReplaceTempView("focal_layer_S")
+focal_layer_s = focal_layer.filter(focal_layer[focal_column].isin(code_list_bog)) # Optional Filter statement
+focal_layer_s.createOrReplaceTempView("focal_layer_s")
 
 # COMMAND ----------
 
@@ -133,7 +126,7 @@ from geopandas import read_file
 
 # break them up
 focal_layer_exploded = spark.sql(
-    "SELECT ST_SubDivideExplode(focal_layer_D.geometry, 12) AS geometry FROM focal_layer_D"
+    "SELECT ST_SubDivideExplode(focal_layer_d.GEOM, 12) AS geometry FROM focal_layer_d"
 ).repartition(500)
 
 focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
@@ -141,17 +134,17 @@ focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
 #find cells that intersect and assign them a 1
 out = spark.sql(
     "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
-).withColumn(focal_name_dense, lit(1))
+).withColumn(focal_name_d, lit(1))
 
 out.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_dense}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name_d}.parquet"
 )
 
 # current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
-out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_dense}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_dense, lit(1))
+out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_d}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_d, lit(1))
 
 out2.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_dense}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name_d}.parquet"
 )
 
 
@@ -159,7 +152,7 @@ out2.write.format("parquet").mode("overwrite").save(
 
 # break them up
 focal_layer_exploded = spark.sql(
-    "SELECT ST_SubDivideExplode(focal_layer_S.geometry, 12) AS geometry FROM focal_layer_S"
+    "SELECT ST_SubDivideExplode(focal_layer_s.GEOM, 12) AS geometry FROM focal_layer_s"
 ).repartition(500)
 
 focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
@@ -167,15 +160,15 @@ focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
 #find cells that intersect and assign them a 1
 out = spark.sql(
     "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
-).withColumn(focal_name_sparse, lit(1))
+).withColumn(focal_name_s, lit(1))
 
 out.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_sparse}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name_s}.parquet"
 )
 
 # current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
-out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_sparse}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_sparse, lit(1))
+out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_s}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_s, lit(1))
 
 out2.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_sparse}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name_s}.parquet"
 )

@@ -79,16 +79,24 @@ ngd_land.display()
 
 # COMMAND ----------
 
-unique_values = ngd_land.select("description").distinct().collect()
+unique_values = ngd_land.select("oslandcovertiera").distinct().collect()
 
 unique_values
 
 
-# oslandcovertierb = 'Heath,Rock,Rough Grassland,Scattered Coniferous Trees,Scattered Non-Coniferous Trees', 'Heath,Rock,Rough Grassland,Scattered Non-Coniferous Trees', 'Heath,Rough Grassland,Scattered Coniferous Trees,Scattered Non-Coniferous Trees', 
-
 # COMMAND ----------
 
-ngd_land_trees = ngd_land.filter(ngd_land["oslandcovertiera"] == "Trees")
+from pyspark.sql.functions import split, col
+
+# Extract the first habitat by splitting the string at the first comma
+unique_values_first_habitat = ngd_land \
+    .select(split(col("oslandcovertierb"), ",")[0].alias("first_habitat")) \
+    .distinct() \
+    .collect()
+
+# Show the unique values
+for row in unique_values_first_habitat:
+    print(row.first_habitat)
 
 # COMMAND ----------
 
@@ -96,25 +104,26 @@ from pyspark.sql import functions as F
 
 # COMMAND ----------
 
-ngd_land_trees_dense = ngd_land_trees.filter(
-    F.col("oslandcovertierb").startswith("Coniferous Trees") |
-    F.col("oslandcovertierb").startswith("Non-Coniferous Trees"))
+ngd_land_coastal = ngd_land.filter(
+    F.col("oslandcovertierb").startswith("Saltmarsh") |
+    F.col("oslandcovertierb").startswith("Shingle") |
+    F.col("oslandcovertierb").startswith("Sand") |
+    F.col("oslandcovertierb").startswith("Inter Tidal"))
 
 # COMMAND ----------
 
-ngd_land_trees_sparse = ngd_land_trees.filter(~(
-    F.col("oslandcovertierb").startswith("Coniferous Trees") |
-    F.col("oslandcovertierb").startswith("Non-Coniferous Trees")))
+ngd_land_sm = ngd_land_coastal.filter(
+    F.col("oslandcovertierb").startswith("saltmarsh"))
 
 # COMMAND ----------
 
-focal_name_dense = "os_ngd_land_trees_dense"
-focal_name_sparse = "os_ngd_land_trees_sparse" # used to name the layer in outputs
+focal_name_coastal = "os_ngd_land_coastal"
+focal_name_sm = "os_ngd_land_saltmarsh" # used to name the layer in outputs
 
 # COMMAND ----------
 
-ngd_land_trees_dense.createOrReplaceTempView("focal_layer_D")
-ngd_land_trees_sparse.createOrReplaceTempView("focal_layer_S")
+ngd_land_coastal.createOrReplaceTempView("focal_layer_C")
+ngd_land_sm.createOrReplaceTempView("focal_layer_SM")
 
 # COMMAND ----------
 
@@ -133,7 +142,7 @@ from geopandas import read_file
 
 # break them up
 focal_layer_exploded = spark.sql(
-    "SELECT ST_SubDivideExplode(focal_layer_D.geometry, 12) AS geometry FROM focal_layer_D"
+    "SELECT ST_SubDivideExplode(focal_layer_C.geometry, 12) AS geometry FROM focal_layer_C"
 ).repartition(500)
 
 focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
@@ -141,17 +150,17 @@ focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
 #find cells that intersect and assign them a 1
 out = spark.sql(
     "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
-).withColumn(focal_name_dense, lit(1))
+).withColumn(focal_name_coastal, lit(1))
 
 out.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_dense}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name_coastal}.parquet"
 )
 
 # current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
-out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_dense}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_dense, lit(1))
+out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_coastal}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_coastal, lit(1))
 
 out2.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_dense}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name_coastal}.parquet"
 )
 
 
@@ -159,7 +168,7 @@ out2.write.format("parquet").mode("overwrite").save(
 
 # break them up
 focal_layer_exploded = spark.sql(
-    "SELECT ST_SubDivideExplode(focal_layer_S.geometry, 12) AS geometry FROM focal_layer_S"
+    "SELECT ST_SubDivideExplode(focal_layer_SM.geometry, 12) AS geometry FROM focal_layer_SM"
 ).repartition(500)
 
 focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
@@ -167,15 +176,15 @@ focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
 #find cells that intersect and assign them a 1
 out = spark.sql(
     "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
-).withColumn(focal_name_sparse, lit(1))
+).withColumn(focal_name_sm, lit(1))
 
 out.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_sparse}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name_sm}.parquet"
 )
 
 # current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
-out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_sparse}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_sparse, lit(1))
+out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_sm}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_sm, lit(1))
 
 out2.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_sparse}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name_sm}.parquet"
 )

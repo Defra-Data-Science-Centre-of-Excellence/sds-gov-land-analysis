@@ -69,42 +69,51 @@ eng_combo_centroids.createOrReplaceTempView("eng_combo_centroids")
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC LCM Codes to keep - 1 (Deciduous Woodland), 2 (Coniferous Woodland)
-
-# COMMAND ----------
-
 import geopandas as gpd
+import pandas as pd
 
 # COMMAND ----------
 
-lcm = gpd.read_file("/dbfs/mnt/lab/restricted/ESD-Project/miles.clement@defra.gov.uk/Defra_Land/LCM/LCM_Eng.shp")
+filepath = "/dbfs/mnt/base/unrestricted/source_defra_data_services_platform/"
+
+phi_north = gpd.read_file(filepath+"dataset_priority_habitat_inventory_north/format_SHP_priority_habitat_inventory_north/LATEST_priority_habitat_inventory_north/PHI_v2_3_North.shp")
+phi_central = gpd.read_file(filepath+"dataset_priority_habitat_inventory_central/format_SHP_priority_habitat_inventory_central/LATEST_priority_habitat_inventory_central/PHI_v2_3_Central.shp")
+phi_south = gpd.read_file(filepath+"dataset_priority_habitat_inventory_south/format_SHP_priority_habitat_inventory_south/LATEST_priority_habitat_inventory_south/PHI_v2_3_South.shp")
+
+phi_comb = pd.concat([phi_north, phi_central, phi_south], ignore_index=True)
 
 # COMMAND ----------
 
-lcm.to_parquet('/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Layers/LCM_Eng.parquet')
+phi_comb.to_parquet('/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Layers/phi_comb.parquet')
 
 # COMMAND ----------
 
-focal_name_1 = "lcm_decid_wood"
-focal_name_2 = "lcm_conif_wood"  # used to name the layer in outputs
+phi_north['Main_Habit'].unique()    
 
-focal_path = "/mnt/lab/restricted/ESD-Project/Defra_Land/Layers/LCM_Eng.parquet"
+# COMMAND ----------
 
-focal_column = 'f_mode'
+focal_name_1 = "phi_blanket_bog"
+focal_name_2 = "phi_upland_flushes" # used to name the layer in outputs
+#focal_name_3 = "phi_mountain_scrub"
 
-focal_variable_1 = 1
-focal_variable_2 = 2
+focal_path = "dbfs:/mnt/lab/restricted/ESD-Project/Defra_Land/Layers/phi_comb.parquet"
+focal_column = 'Main_Habit'
+
+focal_variable_1 = 'Blanket bog'
+focal_variable_2 = 'Upland flushes, fens and swamps'
+#focal_variable_3 = 'Mountain heaths and willow scrub'
 
 # COMMAND ----------
 
 focal_layer = sedona.read.format("geoparquet").load(focal_path)
 
-focal_layer_1 = focal_layer.filter(focal_layer[focal_column] == focal_variable_1) 
-focal_layer_2 = focal_layer.filter(focal_layer[focal_column] == focal_variable_2) 
+focal_layer_1 = focal_layer.filter(focal_layer[focal_column].isin(focal_variable_1)) # Optional Filter statement
+focal_layer_2 = focal_layer.filter(focal_layer[focal_column].isin(focal_variable_2))
+#focal_layer_3 = focal_layer.filter(focal_layer[focal_column].isin(focal_variable_3))
 
 focal_layer_1.createOrReplaceTempView("focal_layer_1")
 focal_layer_2.createOrReplaceTempView("focal_layer_2")
+#focal_layer_3.createOrReplaceTempView("focal_layer_3")
 
 # COMMAND ----------
 
@@ -169,3 +178,28 @@ out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_2}.p
 out2.write.format("parquet").mode("overwrite").save(
     f"{alt_out_path}/10m_x_{focal_name_2}.parquet"
 )
+
+# COMMAND ----------
+
+# break them up
+#focal_layer_exploded = spark.sql(
+#    "SELECT ST_SubDivideExplode(focal_layer_3.geometry, 12) AS geometry FROM focal_layer_3"
+#).repartition(500)
+
+#focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
+
+#find cells that intersect and assign them a 1
+#out = spark.sql(
+#    "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
+#).withColumn(focal_name_3, lit(1))
+
+#out.write.format("parquet").mode("overwrite").save(
+#    f"{alt_out_path}/10m_x_{focal_name_3}.parquet"
+#)
+
+# current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
+#out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_3}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_3, lit(1))
+
+#out2.write.format("parquet").mode("overwrite").save(
+#    f"{alt_out_path}/10m_x_{focal_name_3}.parquet"
+#)

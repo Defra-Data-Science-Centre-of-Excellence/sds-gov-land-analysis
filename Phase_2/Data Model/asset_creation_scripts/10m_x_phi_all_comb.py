@@ -12,6 +12,15 @@
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ####Planned Assets for DGL: Woodland
+# MAGIC - LE Woodland
+# MAGIC - NFI
+# MAGIC - PHI
+# MAGIC - LCM Woodland
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC
 # MAGIC ### Setup
 
@@ -40,14 +49,14 @@ from pathlib import Path
 
 # location for input grid/centroids
 in_path = Path(
-    "/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Model_Grids"
+    "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Model_Grids"
 )
 
 alt_in_path = str(in_path).replace("/dbfs", "dbfs:")
 
 # location for outputs
 out_path = Path(
-    "/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Assets"
+    "/dbfs/mnt/lab-res-a1001005/esd_project/sds-assets/10m/PHI"
 )
 
 alt_out_path = str(out_path).replace("/dbfs", "dbfs:")
@@ -69,42 +78,35 @@ eng_combo_centroids.createOrReplaceTempView("eng_combo_centroids")
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC LCM Codes to keep - 1 (Deciduous Woodland), 2 (Coniferous Woodland)
-
-# COMMAND ----------
-
 import geopandas as gpd
+import pandas as pd
 
 # COMMAND ----------
 
-lcm = gpd.read_file("/dbfs/mnt/lab/restricted/ESD-Project/miles.clement@defra.gov.uk/Defra_Land/LCM/LCM_Eng.shp")
+filepath = "/dbfs/mnt/base/unrestricted/source_defra_data_services_platform/"
+
+phi_north = gpd.read_file(filepath+"dataset_priority_habitat_inventory_north/format_SHP_priority_habitat_inventory_north/LATEST_priority_habitat_inventory_north/PHI_v2_3_North.shp")
+phi_central = gpd.read_file(filepath+"dataset_priority_habitat_inventory_central/format_SHP_priority_habitat_inventory_central/LATEST_priority_habitat_inventory_central/PHI_v2_3_Central.shp")
+phi_south = gpd.read_file(filepath+"dataset_priority_habitat_inventory_south/format_SHP_priority_habitat_inventory_south/LATEST_priority_habitat_inventory_south/PHI_v2_3_South.shp")
+
+phi_comb = pd.concat([phi_north, phi_central, phi_south], ignore_index=True)
 
 # COMMAND ----------
 
-lcm.to_parquet('/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Layers/LCM_Eng.parquet')
+phi_comb.to_parquet('/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Layers/phi_comb.parquet')
 
 # COMMAND ----------
 
-focal_name_1 = "lcm_decid_wood"
-focal_name_2 = "lcm_conif_wood"  # used to name the layer in outputs
+focal_path = "dbfs:/mnt/lab-res-a1001005/esd_project/Defra_Land/Layers/phi_comb.parquet"
 
-focal_path = "/mnt/lab/restricted/ESD-Project/Defra_Land/Layers/LCM_Eng.parquet"
-
-focal_column = 'f_mode'
-
-focal_variable_1 = 1
-focal_variable_2 = 2
 
 # COMMAND ----------
 
 focal_layer = sedona.read.format("geoparquet").load(focal_path)
 
-focal_layer_1 = focal_layer.filter(focal_layer[focal_column] == focal_variable_1) 
-focal_layer_2 = focal_layer.filter(focal_layer[focal_column] == focal_variable_2) 
+focal_layer.createOrReplaceTempView("focal_layer")
 
-focal_layer_1.createOrReplaceTempView("focal_layer_1")
-focal_layer_2.createOrReplaceTempView("focal_layer_2")
+focal_name = "phi_all"
 
 # COMMAND ----------
 
@@ -123,7 +125,7 @@ from geopandas import read_file
 
 # break them up
 focal_layer_exploded = spark.sql(
-    "SELECT ST_SubDivideExplode(focal_layer_1.geometry, 12) AS geometry FROM focal_layer_1"
+    "SELECT ST_SubDivideExplode(focal_layer.geometry, 12) AS geometry FROM focal_layer"
 ).repartition(500)
 
 focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
@@ -131,41 +133,16 @@ focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
 #find cells that intersect and assign them a 1
 out = spark.sql(
     "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
-).withColumn(focal_name_1, lit(1))
+).withColumn(focal_name, lit(1))
 
 out.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_1}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name}.parquet"
 )
 
 # current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
-out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_1}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_1, lit(1))
+out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name}.parquet").groupBy("id").count().drop("count").withColumn(focal_name, lit(1))
 
 out2.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_1}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name}.parquet"
 )
 
-
-# COMMAND ----------
-
-# break them up
-focal_layer_exploded = spark.sql(
-    "SELECT ST_SubDivideExplode(focal_layer_2.geometry, 12) AS geometry FROM focal_layer_2"
-).repartition(500)
-
-focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
-
-#find cells that intersect and assign them a 1
-out = spark.sql(
-    "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
-).withColumn(focal_name_2, lit(1))
-
-out.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_2}.parquet"
-)
-
-# current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
-out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_2}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_2, lit(1))
-
-out2.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name_2}.parquet"
-)

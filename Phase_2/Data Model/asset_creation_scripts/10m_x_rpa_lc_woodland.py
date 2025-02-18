@@ -12,15 +12,6 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ####Planned Assets for DGL: Woodland
-# MAGIC - LE Woodland
-# MAGIC - NFI
-# MAGIC - PHI
-# MAGIC - LCM Woodland
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC
 # MAGIC ### Setup
 
@@ -87,9 +78,12 @@ codes = pd.read_csv('/dbfs/mnt/base/unrestricted/source_rpa_spatial_data_mart/da
 
 # COMMAND ----------
 
-filtered_codes = codes.loc[codes['L1 Asset'] == 'Woodland', 'LAND_COVER_CLASS_CODE']
+codes.display()
 
-code_list = filtered_codes.tolist()
+# COMMAND ----------
+
+code_list_dense = [230, 284, 285, 286, 323, 611, 612, 613, 614, 615, 651]
+code_list_sparse = [130, 335, 588, 592, 593]
 
 # COMMAND ----------
 
@@ -98,18 +92,22 @@ code_list = filtered_codes.tolist()
 
 # COMMAND ----------
 
-focal_name = "rpa_lc_woodland" # used to name the layer in outputs
+focal_name_d = "rpa_lc_woodland_dense"
+focal_name_s = "rpa_lc_woodland_sparse"  
+
 focal_path = "dbfs:/mnt/base/unrestricted/source_rpa_spatial_data_mart/dataset_rpa_land_cover/format_GEOPARQUET_rpa_land_cover/LATEST_rpa_land_cover/land_cover.parquet"
+
 focal_column = 'LAND_COVER_CLASS_CODE'
-focal_variable = code_list
 
 # COMMAND ----------
 
 focal_layer = sedona.read.format("geoparquet").load(focal_path).withColumn("GEOM", expr("ST_MakeValid(GEOM)"))
 
-focal_layer = focal_layer.filter(focal_layer[focal_column].isin(focal_variable)) # Optional Filter statement
+focal_layer_d = focal_layer.filter(focal_layer[focal_column].isin(code_list_dense)) # Optional Filter statement
+focal_layer_d.createOrReplaceTempView("focal_layer_d")
 
-focal_layer.createOrReplaceTempView("focal_layer")
+focal_layer_s = focal_layer.filter(focal_layer[focal_column].isin(code_list_sparse)) # Optional Filter statement
+focal_layer_s.createOrReplaceTempView("focal_layer_s")
 
 # COMMAND ----------
 
@@ -128,7 +126,7 @@ from geopandas import read_file
 
 # break them up
 focal_layer_exploded = spark.sql(
-    "SELECT ST_SubDivideExplode(focal_layer.GEOM, 12) AS geometry FROM focal_layer"
+    "SELECT ST_SubDivideExplode(focal_layer_d.GEOM, 12) AS geometry FROM focal_layer_d"
 ).repartition(500)
 
 focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
@@ -136,20 +134,41 @@ focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
 #find cells that intersect and assign them a 1
 out = spark.sql(
     "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
-).withColumn(focal_name, lit(1))
+).withColumn(focal_name_d, lit(1))
 
 out.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name_d}.parquet"
 )
 
 # current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
-out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name}.parquet").groupBy("id").count().drop("count").withColumn(focal_name, lit(1))
+out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_d}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_d, lit(1))
 
 out2.write.format("parquet").mode("overwrite").save(
-    f"{alt_out_path}/10m_x_{focal_name}.parquet"
+    f"{alt_out_path}/10m_x_{focal_name_d}.parquet"
 )
 
 
 # COMMAND ----------
 
+# break them up
+focal_layer_exploded = spark.sql(
+    "SELECT ST_SubDivideExplode(focal_layer_s.GEOM, 12) AS geometry FROM focal_layer_s"
+).repartition(500)
 
+focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
+
+#find cells that intersect and assign them a 1
+out = spark.sql(
+    "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
+).withColumn(focal_name_s, lit(1))
+
+out.write.format("parquet").mode("overwrite").save(
+    f"{alt_out_path}/10m_x_{focal_name_s}.parquet"
+)
+
+# current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
+out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_s}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_s, lit(1))
+
+out2.write.format("parquet").mode("overwrite").save(
+    f"{alt_out_path}/10m_x_{focal_name_s}.parquet"
+)

@@ -24,23 +24,34 @@ from pathlib import Path
 
 # location for input grid/centroids
 in_path = Path(
-    "/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Model_Grids"
+    "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Model_Grids"
 )
-
 alt_in_path = str(in_path).replace("/dbfs", "dbfs:")
 
-# location for outputs
-par_path = Path(
-    "/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Assets"
+out_path = Path(
+    "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Final/Asset_Tables"
 )
+alt_out_path = str(out_path).replace("/dbfs", "dbfs:")
 
+par_path = Path(
+    "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Assets"
+)
 alt_par_path = str(par_path).replace("/dbfs", "dbfs:")
 
 le_path = Path(
-    "/dbfs/mnt/lab/restricted/ESD-Project/sds-assets/10m"
+    "/dbfs/mnt/lab-res-a1001005/esd_project/sds-assets/10m/LE"
 )
-
 alt_le_path = str(le_path).replace("/dbfs", "dbfs:")
+
+lcm_path = Path(
+    "/dbfs/mnt/lab-res-a1001005/esd_project/sds-assets/10m/LCM"
+)
+alt_lcm_path = str(lcm_path).replace("/dbfs", "dbfs:")
+
+phi_path = Path(
+    "/dbfs/mnt/lab-res-a1001005/esd_project/sds-assets/10m/PHI"
+)
+alt_phi_path = str(phi_path).replace("/dbfs", "dbfs:")
 
 # COMMAND ----------
 
@@ -58,17 +69,17 @@ parquet_list_dense = [f"{alt_par_path}/{grid_square_size}m_x_dgl_fh.parquet",
                       f"{alt_par_path}/{grid_square_size}m_x_dgl_lh.parquet",
                       f"{alt_le_path}/{grid_square_size}m_x_le_coniferous.parquet",
                       f"{alt_le_path}/{grid_square_size}m_x_le_deciduous.parquet",
-                      f"{alt_par_path}/{grid_square_size}m_x_lcm_conif_wood.parquet",
-                      f"{alt_par_path}/{grid_square_size}m_x_lcm_decid_wood.parquet",
-                      f"{alt_par_path}/{grid_square_size}m_x_rpa_lc_woodland.parquet",
-                      f"{alt_par_path}/{grid_square_size}m_x_nfi.parquet",
-                      f"{alt_par_path}/{grid_square_size}m_x_phi_deciduous.parquet"]
+                      f"{alt_lcm_path}/{grid_square_size}m_x_lcm_coniferous_wood.parquet",
+                      f"{alt_lcm_path}/{grid_square_size}m_x_lcm_deciduous_wood.parquet",
+                      f"{alt_par_path}/{grid_square_size}m_x_nfi_dense.parquet",
+                      f"{alt_phi_path}/{grid_square_size}m_x_phi_deciduous_woodland.parquet"]
 
 parquet_list_sparse = [f"{alt_par_path}/{grid_square_size}m_x_dgl_fh.parquet",
                       f"{alt_par_path}/{grid_square_size}m_x_dgl_lh.parquet",
                       f"{alt_le_path}/{grid_square_size}m_x_le_scrub.parquet",
+                      f"{alt_par_path}/{grid_square_size}m_x_nfi_sparse.parquet",
                       f"{alt_par_path}/{grid_square_size}m_x_wood_pasture_park.parquet",
-                      f"{alt_par_path}/{grid_square_size}m_x_phi_orchard.parquet",
+                      f"{alt_phi_path}/{grid_square_size}m_x_phi_traditional_orchard.parquet",
                       f"{alt_par_path}/{grid_square_size}m_x_fr_tow.parquet"]
 
 # COMMAND ----------
@@ -109,42 +120,32 @@ data_combined_sparse.createOrReplaceTempView("data_combined_sparse")
 
 # COMMAND ----------
 
+from pyspark.sql import functions as F
+
+# COMMAND ----------
+
+le_columns = [col for col in data_combined_dense.columns if col.startswith("le")]
+lcm_columns = [col for col in data_combined_dense.columns if col.startswith("lcm")]
+
+# COMMAND ----------
+
+data_combined_dense = data_combined_dense.withColumn("le_comb", F.when(F.greatest(*[F.col(c) for c in le_columns]) == 1, 1).otherwise(None)) \
+       .withColumn("lcm_comb", F.when(F.greatest(*[F.col(c) for c in lcm_columns]) == 1, 1).otherwise(None)) 
+
+# COMMAND ----------
+
+exclude_columns = set(le_columns + lcm_columns)
+remaining_columns = [col for col in data_combined_dense.columns if col not in exclude_columns]
+data_combined_dense = data_combined_dense.select(*remaining_columns)
+
+# COMMAND ----------
+
 data_combined_dense.write.format("parquet").mode("overwrite").save(
-    f"{alt_par_path}/10m_x_assets_combined_dense.parquet"
+    f"{alt_out_path}/10m_x_assets_combined_dense_woodland.parquet"
 )
 
 data_combined_sparse.write.format("parquet").mode("overwrite").save(
-    f"{alt_par_path}/10m_x_assets_combined_sparse.parquet"
-)
-
-# COMMAND ----------
-
-data_combined_dense_reloaded = sedona.read.format("parquet").load(
-    f"{alt_par_path}/10m_x_assets_combined_dense.parquet"
-)
-
-data_combined_sparse_reloaded = sedona.read.format("parquet").load(
-    f"{alt_par_path}/10m_x_assets_combined_sparse.parquet"
-)
-
-# COMMAND ----------
-
-from pyspark.sql.functions import col
-
-# COMMAND ----------
-
-filtered_data = data_combined_dense_reloaded.filter((col("dgl_fh") == 1) | (col("dgl_lh") == 1))
-
-filtered_data.write.format("parquet").mode("overwrite").save(
-    f"{alt_par_path}/10m_x_assets_combined_dense_dgl.parquet"
-)
-
-# COMMAND ----------
-
-filtered_data = data_combined_sparse_reloaded.filter((col("dgl_fh") == 1) | (col("dgl_lh") == 1))
-
-filtered_data.write.format("parquet").mode("overwrite").save(
-    f"{alt_par_path}/10m_x_assets_combined_sparse_dgl.parquet"
+    f"{alt_out_path}/10m_x_assets_combined_sparse_woodland.parquet"
 )
 
 # COMMAND ----------
