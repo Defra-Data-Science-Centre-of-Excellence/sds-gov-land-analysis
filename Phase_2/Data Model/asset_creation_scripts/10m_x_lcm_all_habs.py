@@ -31,6 +31,12 @@ username = dbutils.notebook.entry_point.getDbutils().notebook().getContext().use
 
 # COMMAND ----------
 
+import pandas
+import geopandas
+import rasterio
+
+# COMMAND ----------
+
 # Define size of grid square
 grid_square_size = 10
 
