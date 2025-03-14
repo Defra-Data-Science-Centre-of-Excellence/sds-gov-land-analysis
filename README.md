@@ -64,3 +64,41 @@ Below are details of the scripts found within this repo.
 - `data_comparison_postcode`: validating alb vs defra records. Compare postcodes associated with alb land parcels with postcodes associated with defra records. This is to identify if/ help to disentangle defra and alb owned land parcels.
 - `create_study_boundary`: create a small sample polygon area (national polgon service data can then be clipped to this for manual QA)
 - `data_validation_overlaps`: assess overlaps which exist in the data (for freehold only as leasehold overlap is expected), both within defra land and between defra and non-defra land
+
+
+----------
+#Phase 2: Baselining Broad Habitats on DEFRA Group Land
+
+Project Owner: Miles Clement
+
+Project Contact: miles.clement@defra.gov.uk
+
+Project Start Date: 10/2024
+
+Project Completion Date: 03/2025
+
+Project Sharepoint Link: 
+
+Project Report:
+
+Project App:
+
+##Overview
+
+##Data
+####Inputs
+####Outputs
+####Outputs Location
+
+##Methods & Scripts
+####Data Model
+####Asset Creation
+####Asset Joining
+####Rasterisation
+####Statistics
+####Plotting
+
+##Report Plots
+####Figure 2
+####Figure 3
+####Figure 5
