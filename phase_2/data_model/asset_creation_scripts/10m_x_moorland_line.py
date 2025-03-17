@@ -1,56 +1,66 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC
-# MAGIC # Intersect layers with grid
+# MAGIC # Intersect the Moorland Line with Data Model Grid (10m)
 # MAGIC
-# MAGIC Work out which 10 m grid squares intersect different layers (e.g. National Parks and AONBs)
+# MAGIC Miles Clement (miles.clement@defra.gov.uk)
 # MAGIC
-# MAGIC ###Master Version 
-# MAGIC
-# MAGIC Clone and update to run analysis
+# MAGIC Last Updated 17/03/25
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC
-# MAGIC ### Setup
+# MAGIC ## Setup
+# MAGIC ####Packages
 
 # COMMAND ----------
 
-# MAGIC %pip install keplergl pydeck mapclassify rtree pygeos geopandas==1.0.0
-# MAGIC dbutils.library.restartPython()
+from pathlib import Path
+import geopandas as gpd
+from geopandas import read_file
+import pandas as pd
 
 # COMMAND ----------
 
 from sedona.spark import *
+from sedona.sql import st_constructors as cn
+from pyspark.sql.functions import lit, expr, col, like, sum
+from sedona.sql import st_functions as fn
 
 sedona = SedonaContext.create(spark)
 sqlContext.clearCache()
 
-username = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ####User-defined Variables
 
 # COMMAND ----------
 
+# DBTITLE 1,USER INPUT
 # Define size of grid square
 grid_square_size = 10
 
 # COMMAND ----------
 
-from pathlib import Path
-
 # location for input grid/centroids
 in_path = Path(
-    "/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Model_Grids"
+    "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Model_Grids"
 )
 
 alt_in_path = str(in_path).replace("/dbfs", "dbfs:")
 
 # location for outputs
 out_path = Path(
-    "/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Assets"
+    "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Assets"
 )
 
 alt_out_path = str(out_path).replace("/dbfs", "dbfs:")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ####Load in core datasets
 
 # COMMAND ----------
 
@@ -65,22 +75,34 @@ eng_combo_centroids.createOrReplaceTempView("eng_combo_centroids")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Update Cell Below
+# MAGIC ####Load in and explore asset dataset
 
 # COMMAND ----------
 
-focal_name = "moorland_line" 
-
+# DBTITLE 1,USER NPUT
 focal_path = "dbfs:/mnt/base/unrestricted/source_rpa_spatial_data_mart/dataset_lfa_and_moorland_line/format_GEOPARQUET_lfa_and_moorland_line/LATEST_lfa_and_moorland_line/lfa/lfa_solid.parquet"
 
-focal_column = 'name'
+# COMMAND ----------
 
-focal_variable = ["MS","MD"]
+# Quick-load data and display to explore
+focal_layer = sedona.read.format("geoparquet").load(focal_path)
+focal_layer.createOrReplaceTempView("focal_layer")
+focal_layer.display()
 
 # COMMAND ----------
 
-focal_layer = sedona.read.format("geoparquet").load(focal_path)
+# DBTITLE 1,USER INPUT
+# Define naming and filter vaiables
+# Set name for new columns and output assets
+focal_name = "moorland_line" 
 
+# What attribute is the data filtered using?
+focal_column = 'name'
+
+# Define attribute values - MS & MD represent uplands
+focal_variable = ["MS","MD"]
+
+# Filter using focal_variables in focal_column
 focal_layer = focal_layer.filter(focal_layer[focal_column].isin(focal_variable)) 
 
 focal_layer.createOrReplaceTempView("focal_layer")
@@ -90,13 +112,6 @@ focal_layer.createOrReplaceTempView("focal_layer")
 # MAGIC %md
 # MAGIC
 # MAGIC ### Processing
-
-# COMMAND ----------
-
-from sedona.sql import st_constructors as cn
-from pyspark.sql.functions import lit, expr, col, like, sum
-from sedona.sql import st_functions as fn
-from geopandas import read_file
 
 # COMMAND ----------
 

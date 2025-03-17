@@ -1,33 +1,39 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC
-# MAGIC # Intersect layers with grid
+# MAGIC # Intersect ONS Built-up Areas (2022) with Data Model Grid (10m)
 # MAGIC
-# MAGIC Work out which 10 m grid squares intersect different layers (e.g. National Parks and AONBs)
+# MAGIC Miles Clement (miles.clement@defra.gov.uk)
 # MAGIC
-# MAGIC ###Master Version 
-# MAGIC
-# MAGIC Clone and update to run analysis
+# MAGIC Last Updated 17/03/25
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC
-# MAGIC ### Setup
+# MAGIC ## Setup
+# MAGIC ####Packages
 
 # COMMAND ----------
 
-# MAGIC %pip install keplergl pydeck mapclassify rtree pygeos geopandas==1.0.0
-# MAGIC dbutils.library.restartPython()
+from pathlib import Path
+import geopandas as gpd
+from geopandas import read_file
+import pandas as pd
 
 # COMMAND ----------
 
 from sedona.spark import *
+from sedona.sql import st_constructors as cn
+from pyspark.sql.functions import lit, expr, col, like, sum
+from sedona.sql import st_functions as fn
 
 sedona = SedonaContext.create(spark)
 sqlContext.clearCache()
 
-username = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ####User-defined Variables
 
 # COMMAND ----------
 
@@ -36,8 +42,7 @@ grid_square_size = 10
 
 # COMMAND ----------
 
-from pathlib import Path
-
+# DBTITLE 1,USER INPUT
 # location for input grid/centroids
 in_path = Path(
     "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Model_Grids"
@@ -54,6 +59,11 @@ alt_out_path = str(out_path).replace("/dbfs", "dbfs:")
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ####Load in core datasets
+
+# COMMAND ----------
+
 # read in grid points
 eng_combo_centroids = (
     sedona.read.format("parquet")
@@ -65,28 +75,25 @@ eng_combo_centroids.createOrReplaceTempView("eng_combo_centroids")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Update Cell Below
+# MAGIC ####Load in asset dataset
 
 # COMMAND ----------
-
-import geopandas as gpd
-
-# COMMAND ----------
-
-focal_name = "ons_urban"
 
 focal_path = "/mnt/base/unrestricted/source_ons_open_geography_portal/dataset_built_up_areas_2022_gb_bgg/format_GEOPARQUET_built_up_areas_2022_gb_bgg/LATEST_built_up_areas_2022_gb_bgg/BUA_2022_GB.parquet"
 
-
 # COMMAND ----------
 
+# Quick-load data and display to explore
 focal_layer = sedona.read.format("geoparquet").load(focal_path)
-
 focal_layer.createOrReplaceTempView("focal_layer")
+focal_layer.display()
 
 # COMMAND ----------
 
-focal_layer.display()
+# DBTITLE 1,USER INPUT
+# Define naming and filter vaiables
+# Set name for new columns and output assets
+focal_name = "ons_urban"
 
 # COMMAND ----------
 
@@ -96,21 +103,14 @@ focal_layer.display()
 
 # COMMAND ----------
 
-from sedona.sql import st_constructors as cn
-from pyspark.sql.functions import lit, expr, col, like, sum
-from sedona.sql import st_functions as fn
-from geopandas import read_file
-
-# COMMAND ----------
-
-# break them up
+# Explode polygons
 focal_layer_exploded = spark.sql(
     "SELECT ST_SubDivideExplode(focal_layer.geometry, 12) AS geometry FROM focal_layer"
 ).repartition(500)
 
 focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
 
-#find cells that intersect and assign them a 1
+# Find cells that intersect asset layer and assign them a 1
 out = spark.sql(
     "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
 ).withColumn(focal_name, lit(1))
@@ -119,7 +119,7 @@ out.write.format("parquet").mode("overwrite").save(
     f"{alt_out_path}/10m_x_{focal_name}.parquet"
 )
 
-# current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
+# Drop duplicates
 out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name}.parquet").groupBy("id").count().drop("count").withColumn(focal_name, lit(1))
 
 out2.write.format("parquet").mode("overwrite").save(
