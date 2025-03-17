@@ -1,44 +1,51 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC
-# MAGIC # Intersect layers with grid
+# MAGIC # Intersect Defra Group Land HM Land Registry Polygons (split by Organisation) with Data Model Grid (10m)
 # MAGIC
-# MAGIC Work out which 10 m grid squares intersect different layers (e.g. National Parks and AONBs)
+# MAGIC - The code for creating this asset is slightly different, as it assigns the organisation string to each grid centroid rather than creating a boolean asset catalogue.
 # MAGIC
-# MAGIC ###Master Version 
+# MAGIC Miles Clement (miles.clement@defra.gov.uk)
 # MAGIC
-# MAGIC Clone and update to run analysis
+# MAGIC Last Updated 17/03/25
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC
-# MAGIC ### Setup
+# MAGIC ## Setup
+# MAGIC ####Packages
 
 # COMMAND ----------
 
-# MAGIC %pip install keplergl pydeck mapclassify rtree pygeos geopandas==1.0.0
-# MAGIC dbutils.library.restartPython()
+from pathlib import Path
+import geopandas as gpd
+from geopandas import read_file
+import pandas as pd
 
 # COMMAND ----------
 
 from sedona.spark import *
-
+from sedona.sql import st_constructors as cn
+from pyspark.sql.functions import lit, expr, col, like, sum, when, concat
+from sedona.sql import st_functions as fn
 
 sedona = SedonaContext.create(spark)
 sqlContext.clearCache()
 
-username = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ####User-defined Variables
 
 # COMMAND ----------
 
+# DBTITLE 1,USER INPUT
 # Define size of grid square
 grid_square_size = 10
 
 # COMMAND ----------
 
-from pathlib import Path
-
+# DBTITLE 1,USER INPUT
 # location for input grid/centroids
 in_path = Path(
     "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Model_Grids"
@@ -55,6 +62,11 @@ alt_out_path = str(out_path).replace("/dbfs", "dbfs:")
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ####Load in core datasets
+
+# COMMAND ----------
+
 # read in grid points
 eng_combo_centroids = (
     sedona.read.format("parquet")
@@ -66,21 +78,24 @@ eng_combo_centroids.createOrReplaceTempView("eng_combo_centroids")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Update Cell Below
+# MAGIC ####Load in and explore asset dataset
 
 # COMMAND ----------
 
+# DBTITLE 1,USER INPUT
+# Where to find the asset data
 focal_path = "dbfs:/mnt/lab-res-a1001005/esd_project/jasmine.elliott@defra.gov.uk/gov_land_analysis/phase_one_final_report_outputs/polygon_ccod_defra_by_organisation_tenure.parquet"
 
 # COMMAND ----------
 
+# Quick-load data and display to explore
 focal_layer = sedona.read.format("geoparquet").load(focal_path)
 focal_layer.createOrReplaceTempView("focal_layer")
+focal_layer.display()
 
 # COMMAND ----------
 
-from pyspark.sql.functions import when, concat, lit, col
-
+# Create new column combining 'current_organisation' and 'land_management_organisation' columns
 focal_layer = focal_layer.withColumn(
     "organisation",
     when(
@@ -96,10 +111,16 @@ focal_layer = focal_layer.withColumn(
     )
 )
 
+focal_layer.createOrReplaceTempView("focal_layer")
+
 # COMMAND ----------
 
-focal_layer.createOrReplaceTempView("focal_layer")
+# DBTITLE 1,USER INPUT
+# Define naming and filter vaiables
+# Set name for new columns and output assets
 focal_name = "dgl_organisation"
+
+# What attribute is the data filtered using?
 focal_column = 'organisation'
 
 # COMMAND ----------
@@ -110,21 +131,15 @@ focal_column = 'organisation'
 
 # COMMAND ----------
 
-from sedona.sql import st_constructors as cn
-from pyspark.sql.functions import lit, expr, col, like, sum
-from sedona.sql import st_functions as fn
-from geopandas import read_file
-
-# COMMAND ----------
-
 # Explode the focal layer geometries
+# Select both the subdivided geometry and the specified focal_column for further processing.
 focal_layer_exploded = spark.sql(
     "SELECT ST_SubDivideExplode(focal_layer.geometry, 12) AS geometry, focal_layer.{focal_column} AS {focal_column} FROM focal_layer".format(focal_column=focal_column)
 ).repartition(500)
 
 focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
 
-# Find cells that intersect and include the value from the focal column
+# Find cells that intersect and extract the organisation value from the focal column
 out = spark.sql(
     f"""
     SELECT eng_combo_centroids.id, focal_layer_exploded.{focal_column}
@@ -145,21 +160,4 @@ out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name}.par
 out2.write.format("parquet").mode("overwrite").save(
     f"{alt_out_path}/10m_x_{focal_name}.parquet"
 )
-
-
-# COMMAND ----------
-
-check = sedona.read.format("parquet").load('dbfs:/mnt/lab-res-a1001005/esd_project/Defra_Land/Assets/10m_x_dgl_organisation.parquet')
-
-# COMMAND ----------
-
-check.display()
-
-# COMMAND ----------
-
-unique_values = check.select("organisation").dropDuplicates()
-unique_values.display()
-
-# COMMAND ----------
-
 
