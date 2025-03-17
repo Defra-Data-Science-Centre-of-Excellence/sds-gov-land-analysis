@@ -126,14 +126,14 @@ focal_layer_lh.createOrReplaceTempView("focal_layer_lh")
 # COMMAND ----------
 
 # DBTITLE 1,FREEHOLD
-# break them up
+# Explode polygons
 focal_layer_exploded = spark.sql(
     "SELECT ST_SubDivideExplode(focal_layer_fh.geometry, 12) AS geometry FROM focal_layer_fh"
 ).repartition(500)
 
 focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
 
-#find cells that intersect and assign them a 1
+# Find cells that intersect asset layer and assign them a 1
 out = spark.sql(
     "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
 ).withColumn(focal_name_fh, lit(1))
@@ -142,7 +142,7 @@ out.write.format("parquet").mode("overwrite").save(
     f"{alt_out_path}/10m_x_{focal_name_fh}.parquet"
 )
 
-# current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
+# Drop duplicates
 out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_fh}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_fh, lit(1))
 
 out2.write.format("parquet").mode("overwrite").save(
@@ -152,14 +152,14 @@ out2.write.format("parquet").mode("overwrite").save(
 
 # COMMAND ----------
 
-# break them up
+# Explode polygons
 focal_layer_exploded = spark.sql(
     "SELECT ST_SubDivideExplode(focal_layer_lh.geometry, 12) AS geometry FROM focal_layer_lh"
 ).repartition(500)
 
 focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
 
-#find cells that intersect and assign them a 1
+# Find cells that intersect asset layer and assign them a 1
 out = spark.sql(
     "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
 ).withColumn(focal_name_lh, lit(1))
@@ -168,7 +168,7 @@ out.write.format("parquet").mode("overwrite").save(
     f"{alt_out_path}/10m_x_{focal_name_lh}.parquet"
 )
 
-# current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
+# Drop duplicates
 out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name_lh}.parquet").groupBy("id").count().drop("count").withColumn(focal_name_lh, lit(1))
 
 out2.write.format("parquet").mode("overwrite").save(

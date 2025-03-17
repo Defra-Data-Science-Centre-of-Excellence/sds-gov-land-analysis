@@ -1,56 +1,70 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC
-# MAGIC # Intersect layers with grid
+# MAGIC # Intersect Natural England Priority Habitat Inventory with Data Model Grid (10m)
+# MAGIC - This code iterates through all habitats and creates the relevant assets
 # MAGIC
-# MAGIC Work out which 10 m grid squares intersect different layers (e.g. National Parks and AONBs)
+# MAGIC Miles Clement (miles.clement@defra.gov.uk)
 # MAGIC
-# MAGIC ###Master Version 
-# MAGIC
-# MAGIC Clone and update to run analysis
+# MAGIC Last Updated 17/03/25
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC
-# MAGIC ### Setup
+# MAGIC ## Setup
+# MAGIC ####Packages
 
 # COMMAND ----------
 
-# MAGIC %pip install keplergl pydeck mapclassify rtree pygeos geopandas==1.0.0
-# MAGIC dbutils.library.restartPython()
+from pathlib import Path
+import geopandas as gpd
+from geopandas import read_file
+import pandas as pd
+import os
 
 # COMMAND ----------
 
 from sedona.spark import *
+from sedona.sql import st_constructors as cn
+from pyspark.sql.functions import lit, expr, col, like, sum
+from sedona.sql import st_functions as fn
 
 sedona = SedonaContext.create(spark)
 sqlContext.clearCache()
 
-username = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ####User-defined Variables
 
 # COMMAND ----------
 
+# DBTITLE 1,USER INPUT
 # Define size of grid square
 grid_square_size = 10
 
 # COMMAND ----------
 
-from pathlib import Path
-
+# DBTITLE 1,USER INPUT
 # location for input grid/centroids
 in_path = Path(
-    "/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Model_Grids"
+    "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Model_Grids"
 )
 
 alt_in_path = str(in_path).replace("/dbfs", "dbfs:")
 
 # location for outputs
 out_path = Path(
-    "/dbfs/mnt/lab/restricted/ESD-Project/sds-assets/10m/PHI"
+    "/dbfs/mnt/lab-res-a1001005/esd_project/sds-assets/10m/PHI"
 )
 
 alt_out_path = str(out_path).replace("/dbfs", "dbfs:")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC %md
+# MAGIC ####Load in core datasets
 
 # COMMAND ----------
 
@@ -65,12 +79,8 @@ eng_combo_centroids.createOrReplaceTempView("eng_combo_centroids")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Pull in & Combine PHI Data
-
-# COMMAND ----------
-
-import geopandas as gpd
-import pandas as pd
+# MAGIC ####Load in asset dataset
+# MAGIC - PHI is stored in three subsets - load in and combine
 
 # COMMAND ----------
 
@@ -84,14 +94,24 @@ phi_comb = pd.concat([phi_north, phi_central, phi_south], ignore_index=True)
 
 # COMMAND ----------
 
-phi_comb.to_parquet('/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Layers/phi_comb.parquet')
+# Save to parquet
+phi_comb.to_parquet('/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Layers/phi_comb.parquet')
 
 # COMMAND ----------
 
-phi_comb['Main_Habit'].unique()
+# Reload data
+focal_path = "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Layers/phi_comb.parquet"
+focal_layer = sedona.read.format("geoparquet").load(focal_path)
+
+# Define naming and filter vaiables
+dataset_prefix = 'phi'
+focal_column = 'Main_Habit'
+
 
 # COMMAND ----------
 
+# DBTITLE 1,USER INPUT
+# Create dictionary of habitat names and desired output names
 asset_dict = {'Blanket bog':'blanket_bog',
  'Calaminarian grassland':'grassland_calaminarian',
  'Coastal and floodplain grazing marsh':'coast_floodplain_grazing_marsh',
@@ -124,52 +144,32 @@ asset_dict = {'Blanket bog':'blanket_bog',
 
 # COMMAND ----------
 
-focal_path = "dbfs:/mnt/lab/restricted/ESD-Project/Defra_Land/Layers/phi_comb.parquet"
-
-dataset_prefix = 'phi'
-
-focal_column = 'Main_Habit'
-
-focal_layer = sedona.read.format("geoparquet").load(focal_path)
-
-# COMMAND ----------
-
-asset_list = focal_layer.select(focal_column).distinct().rdd.flatMap(lambda x: x).collect()
-asset_list = [x for x in asset_list if x is not None]
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC
 # MAGIC ### Processing
 
 # COMMAND ----------
 
-from sedona.sql import st_constructors as cn
-from pyspark.sql.functions import lit, expr, col, like, sum
-from sedona.sql import st_functions as fn
-from geopandas import read_file
-
-# COMMAND ----------
-
+# Iterate through dictionary
 for asset, outname in asset_dict.items(): 
 
   print(f"Processing: {asset}")
 
-  asset_layer = focal_layer.filter(focal_layer[focal_column] == asset) 
-
+  # Set outname
   focal_name = f"{dataset_prefix}_{outname}"
 
+  # Filter dataset for habitat
+  asset_layer = focal_layer.filter(focal_layer[focal_column] == asset) 
   asset_layer.createOrReplaceTempView("asset_layer")
 
-  # break them up
+  # Explode polygons
   asset_layer_exploded = spark.sql(
       "SELECT ST_SubDivideExplode(asset_layer.geometry, 12) AS geometry FROM asset_layer"
   ).repartition(500)
 
   asset_layer_exploded.createOrReplaceTempView("asset_layer_exploded")
 
-  #find cells that intersect and assign them a 1
+  # Find cells that intersect asset layer and assign them a 1
   out = spark.sql(
       "SELECT eng_combo_centroids.id FROM eng_combo_centroids, asset_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, asset_layer_exploded.geometry)"
   ).withColumn(focal_name, lit(1))
@@ -178,7 +178,7 @@ for asset, outname in asset_dict.items():
       f"{alt_out_path}/10m_x_{focal_name}.parquet"
   )
 
-  # current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
+  # Drop duplicates
   out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name}.parquet").groupBy("id").count().drop("count").withColumn(focal_name, lit(1))
 
   out2.write.format("parquet").mode("overwrite").save(

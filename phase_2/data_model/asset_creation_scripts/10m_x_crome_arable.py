@@ -122,14 +122,14 @@ focal_layer.createOrReplaceTempView("focal_layer")
 
 # COMMAND ----------
 
-# break them up
+# Explode polygons
 focal_layer_exploded = spark.sql(
     "SELECT ST_SubDivideExplode(focal_layer.GEOM, 12) AS geometry FROM focal_layer"
 ).repartition(500)
 
 focal_layer_exploded.createOrReplaceTempView("focal_layer_exploded")
 
-#find cells that intersect and assign them a 1
+# Find cells that intersect asset layer and assign them a 1
 out = spark.sql(
     "SELECT eng_combo_centroids.id FROM eng_combo_centroids, focal_layer_exploded WHERE ST_INTERSECTS(eng_combo_centroids.geometry, focal_layer_exploded.geometry)"
 ).withColumn(focal_name, lit(1))
@@ -138,7 +138,7 @@ out.write.format("parquet").mode("overwrite").save(
     f"{alt_out_path}/10m_x_{focal_name}.parquet"
 )
 
-# current work around to get rid of duplicates quickly - distinct/dropDuplicates is slow in both pyspark and SQL
+# Drop duplicates
 out2 = spark.read.format("parquet").load(f"{alt_out_path}/10m_x_{focal_name}.parquet").groupBy("id").count().drop("count").withColumn(focal_name, lit(1))
 
 out2.write.format("parquet").mode("overwrite").save(
