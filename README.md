@@ -5,7 +5,7 @@ The first phase was created to extract DEFRA (and DEFRA Arms-Length Body) land p
 
 The second phase produced a habitat baseline for the Defra estate, utilising a wide range of open-source data.
 
-##Phase 1: Mapping the Defra estate
+## Phase 1: Mapping the Defra estate
 
 This section of the repo was created to extract DEFRA (and DEFRA Arms-Length Body) land parcel data from the land registry National Polygon Service. It can be used alongside the report 'Identifying government land using land registry data: DEFRA case study' (found in the [project sharepoint folder](https://defra.sharepoint.com/:f:/r/teams/Team1608/ESA%20Team%20Resources/Spatial%20Data%20Science/Workstreams/land_ownership/Outputs?csf=1&web=1&e=vbPSCa)).
 
@@ -72,7 +72,7 @@ Below are details of the scripts found within this repo.
 - `create_study_boundary`: create a small sample polygon area (national polgon service data can then be clipped to this for manual QA)
 - `data_validation_overlaps`: assess overlaps which exist in the data (for freehold only as leasehold overlap is expected), both within defra land and between defra and non-defra land
 
-##Phase 2: Baselining habitat extent on the Defra estate
+## Phase 2: Baselining habitat extent on the Defra estate
 
 Intro Blurb
 
