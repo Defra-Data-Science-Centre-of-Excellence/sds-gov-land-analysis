@@ -1,10 +1,25 @@
 # Databricks notebook source
-# MAGIC %pip install keplergl pydeck mapclassify rtree pygeos geopandas==1.0.0
-# MAGIC dbutils.library.restartPython()
+# MAGIC %md
+# MAGIC # Combine Habitat asset tables into single dataframe - Woodland
+# MAGIC
+# MAGIC Miles Clement (miles.clement@defra.gov.uk)
+# MAGIC
+# MAGIC Last Updated 24/03/25
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Setup
+# MAGIC ####Packages
+
+# COMMAND ----------
+
+from pathlib import Path
 
 # COMMAND ----------
 
 from sedona.spark import *
+from pyspark.sql import functions as F
 
 sedona = SedonaContext.create(spark)
 sqlContext.clearCache()
@@ -15,14 +30,19 @@ username = (
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ####User-defined Variables
+
+# COMMAND ----------
+
 # Define size of grid square
 grid_square_size = 10
 
 # COMMAND ----------
 
-from pathlib import Path
-
-# location for input grid/centroids
+# Locations for data
+# Normally wouldn't have this many, or do the path to a higher folder level instead once asset catalogue fully setup in dbfs
+# Separate paths to pull in Living England, LCM and PHI
 in_path = Path(
     "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Model_Grids"
 )
@@ -55,16 +75,7 @@ alt_phi_path = str(phi_path).replace("/dbfs", "dbfs:")
 
 # COMMAND ----------
 
-# read in grid points
-eng_combo_centroids = (
-    sedona.read.format("parquet")
-    .load(f"{alt_in_path}/{grid_square_size}m_england_grid_centroids.parquet")
-    .repartition(500)
-)
-eng_combo_centroids.createOrReplaceTempView("eng_combo_centroids")
-
-# COMMAND ----------
-
+# Create list of assets to be combined - dense woodland
 parquet_list_dense = [f"{alt_par_path}/{grid_square_size}m_x_dgl_fh.parquet",
                       f"{alt_par_path}/{grid_square_size}m_x_dgl_lh.parquet",
                       f"{alt_le_path}/{grid_square_size}m_x_le_coniferous.parquet",
@@ -74,6 +85,7 @@ parquet_list_dense = [f"{alt_par_path}/{grid_square_size}m_x_dgl_fh.parquet",
                       f"{alt_par_path}/{grid_square_size}m_x_nfi_dense.parquet",
                       f"{alt_phi_path}/{grid_square_size}m_x_phi_deciduous_woodland.parquet"]
 
+# Create list of assets to be combined - sparse woodland
 parquet_list_sparse = [f"{alt_par_path}/{grid_square_size}m_x_dgl_fh.parquet",
                       f"{alt_par_path}/{grid_square_size}m_x_dgl_lh.parquet",
                       f"{alt_le_path}/{grid_square_size}m_x_le_scrub.parquet",
@@ -84,30 +96,46 @@ parquet_list_sparse = [f"{alt_par_path}/{grid_square_size}m_x_dgl_fh.parquet",
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ####Load in core datasets
+
+# COMMAND ----------
+
+# read in grid points
+eng_combo_centroids = (
+    sedona.read.format("parquet")
+    .load(f"{alt_in_path}/{grid_square_size}m_england_grid_centroids.parquet")
+    .repartition(500)
+)
+eng_combo_centroids.createOrReplaceTempView("eng_combo_centroids")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Processing
+
+# COMMAND ----------
+
 data_combined_dense = eng_combo_centroids
 data_combined_sparse = eng_combo_centroids
 
 # COMMAND ----------
 
-# Loop through each Parquet file and join it with the base dataset
+# Loop through each Parquet file and join it with the base dataset (using ID)
 for parquet_path in parquet_list_dense:
 
-    # Read the Parquet file
     parquet_df = sedona.read.format("parquet").load(parquet_path)
     
-    # Join the base dataset with the current Parquet file on 'ID'
     data_combined_dense = data_combined_dense.join(parquet_df, on="ID", how="left")
 
 
 # COMMAND ----------
 
-# Loop through each Parquet file and join it with the base dataset
+# Loop through each Parquet file and join it with the base dataset (using ID)
 for parquet_path in parquet_list_sparse:
 
-    # Read the Parquet file
     parquet_df = sedona.read.format("parquet").load(parquet_path)
-    
-    # Join the base dataset with the current Parquet file on 'ID'
+
     data_combined_sparse = data_combined_sparse.join(parquet_df, on="ID", how="left")
 
 # COMMAND ----------
@@ -120,20 +148,20 @@ data_combined_sparse.createOrReplaceTempView("data_combined_sparse")
 
 # COMMAND ----------
 
-from pyspark.sql import functions as F
+# Code to prevent double counting from specific habitat
+# eg. arable and improved grassland equals 1, rather than 2 in the final counts when summed together
+# Possibility for Living England, LCM and PHI
 
-# COMMAND ----------
-
+# Get column names from source datasets
 le_columns = [col for col in data_combined_dense.columns if col.startswith("le")]
 lcm_columns = [col for col in data_combined_dense.columns if col.startswith("lcm")]
 
-# COMMAND ----------
-
+# Create new columns combining dataset specific columns
+# If any equal 1, than new columns equals 1
 data_combined_dense = data_combined_dense.withColumn("le_comb", F.when(F.greatest(*[F.col(c) for c in le_columns]) == 1, 1).otherwise(None)) \
        .withColumn("lcm_comb", F.when(F.greatest(*[F.col(c) for c in lcm_columns]) == 1, 1).otherwise(None)) 
 
-# COMMAND ----------
-
+# Remove dataset/habitat specific columns 
 exclude_columns = set(le_columns + lcm_columns)
 remaining_columns = [col for col in data_combined_dense.columns if col not in exclude_columns]
 data_combined_dense = data_combined_dense.select(*remaining_columns)
