@@ -1,9 +1,10 @@
 # sds-gov-land-analysis
-This project has consisted of two phases [LINKS]. 
+This project has consisted of two phases. 
+https://github.com/Defra-Data-Science-Centre-of-Excellence/sds-gov-land-analysis/tree/readme?tab=readme-ov-file#phase-2-baselining-habitat-extent-on-the-defra-estate
 
-The first phase was created to extract DEFRA (and DEFRA Arms-Length Body) land parcel data from the land registry National Polygon Service. It can be used alongside the report 'Identifying government land using land registry data: DEFRA case study' (found in the [project sharepoint folder](https://defra.sharepoint.com/sites/WorkDelivery2519/Spatial%20Data%20Science/Forms/AllItems.aspx?csf=1&web=1&e=reMRYC&ovuser=770a2450%2D0227%2D4c62%2D90c7%2D4e38537f1102%2CMiles%2EClement%40defra%2Egov%2Euk&OR=Teams%2DHL&CT=1742830953484&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNTAzMDIwMTAwOCIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D&CID=ebaf8da1%2D70d6%2Dc000%2D26eb%2Dd1d6f0a738bd&cidOR=SPO&FolderCTID=0x0120007CCB105D9BBB434CB091053B0DD3EC52&id=%2Fsites%2FWorkDelivery2519%2FSpatial%20Data%20Science%2FWorkstreams%2Fland%5Fownership)). 
+- The [first phase](https://github.com/Defra-Data-Science-Centre-of-Excellence/sds-gov-land-analysis/tree/readme?tab=readme-ov-file#phase-1-mapping-the-defra-estate) was created to extract DEFRA (and DEFRA Arms-Length Body) land parcel data from the land registry National Polygon Service. It can be used alongside the report 'Identifying government land using land registry data: DEFRA case study' (found in the [project sharepoint folder](https://defra.sharepoint.com/sites/WorkDelivery2519/Spatial%20Data%20Science/Forms/AllItems.aspx?csf=1&web=1&e=reMRYC&ovuser=770a2450%2D0227%2D4c62%2D90c7%2D4e38537f1102%2CMiles%2EClement%40defra%2Egov%2Euk&OR=Teams%2DHL&CT=1742830953484&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNTAzMDIwMTAwOCIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D&CID=ebaf8da1%2D70d6%2Dc000%2D26eb%2Dd1d6f0a738bd&cidOR=SPO&FolderCTID=0x0120007CCB105D9BBB434CB091053B0DD3EC52&id=%2Fsites%2FWorkDelivery2519%2FSpatial%20Data%20Science%2FWorkstreams%2Fland%5Fownership)). 
 
-The second phase produced a habitat baseline for the Defra estate, utilising a wide range of open-source data.
+- The [second phase](https://github.com/Defra-Data-Science-Centre-of-Excellence/sds-gov-land-analysis/tree/readme?tab=readme-ov-file#phase-2-baselining-habitat-extent-on-the-defra-estate)  produced a habitat baseline for the Defra estate, utilising a wide range of open-source data.
 
 ## Phase 1: Mapping the Defra estate
 
