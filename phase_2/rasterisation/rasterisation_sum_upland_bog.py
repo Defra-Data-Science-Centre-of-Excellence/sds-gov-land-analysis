@@ -1,13 +1,24 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC ### Rasterisation - SUM Version
-# MAGIC Example script to create a 10m resolution raster from centroids. Raster values represents the sum of selected columns. 
+# MAGIC ### Rasterisation - SUM Version - Upland Bog (Subset)
+# MAGIC Creates a 10m resolution raster from centroids data. Raster values represents the sum of selected columns. 
+# MAGIC
+# MAGIC Miles Clement (miles.clement@defra.gov.uk)
+# MAGIC
+# MAGIC Last Updated 02/04/25
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC
 # MAGIC ### Setup
+# MAGIC ####Packages
+
+# COMMAND ----------
+
+from pathlib import Path
+from pyspark.sql import functions as F
+from pyspark.sql.functions import col
+from affine import Affine
 
 # COMMAND ----------
 
@@ -62,7 +73,7 @@ def rasterise_points_initial(
 
     # Prepare (geometry, raster_score) tuples
     # This part is different from boolean example
-    shapes_with_values = zip(gdf.geometry, gdf["os_ngd_water"])
+    shapes_with_values = zip(gdf.geometry, gdf["raster_score"])
 
     # Rasterize using the provided values
     data_array = rasterize(
@@ -127,7 +138,7 @@ def rasterise_points_update(
         Filename of raster output file created
     """
     # Prepare (geometry, raster_score) tuples
-    shapes_with_values = zip(gdf.geometry, gdf["os_ngd_water"])
+    shapes_with_values = zip(gdf.geometry, gdf["raster_score"])
 
     # Rasterize using the provided values
     data_array = rasterize(
@@ -163,31 +174,55 @@ def rasterise_points_update(
 
 # COMMAND ----------
 
-from pathlib import Path
-
 # location for outputs
 par_path = Path(
-    "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Assets"
+    "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Final/Asset_Tables"
 )
 
 alt_par_path = str(par_path).replace("/dbfs", "dbfs:")
 
 data_combined = sedona.read.format("parquet").load(
-    f"{alt_par_path}/10m_x_assets_water.parquet"
+    f"{alt_par_path}/10m_x_assets_combined_upland_bog.parquet"
 )
 
 # COMMAND ----------
 
-from pyspark.sql import functions as F
-
-# COMMAND ----------
-
 # Set condition to find rows overlapping DGL (FH or LH)
-#condition = ((F.col("dgl_fh") == 1) | (F.col("dgl_lh") == 1)) 
+# Note the additional condition around uplands
+condition = ((F.col("dgl_fh") == 1) | (F.col("dgl_lh") == 1)) & (F.col("moorland_line") == 1)
 
 # COMMAND ----------
 
+# DBTITLE 1,Quick print for checking cols
 data_combined.display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC -----
+
+# COMMAND ----------
+
+# DBTITLE 1,USER INPUT
+# Define which columns to combine into raster cell
+# Bog Only
+columns_to_sum = ["le_bog","phi_blanket_bog","lcm_bog"]
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---------
+
+# COMMAND ----------
+
+# Add a new column with the sum of the values across the specified columns
+data_combined_score = data_combined.withColumn(
+    "raster_score",
+    F.when(
+        condition,
+        sum(F.coalesce(F.col(col), F.lit(0)) for col in columns_to_sum)  # Replace nulls with 0 before summing
+    ).otherwise(None)  # Optionally handle rows not meeting the condition
+)
 
 # COMMAND ----------
 
@@ -196,8 +231,6 @@ data_combined.display()
 # MAGIC #### Constants
 
 # COMMAND ----------
-
-from affine import Affine
 
 # the names of the 100km grid cells covering the bounds of England (some won't contain data)
 os_grid_codes = [
@@ -268,7 +301,7 @@ transform = Affine(pixel_width, 0, top_left_x, 0, pixel_height, top_left_y)
 # shape of the raster
 shape = (70000, 70000)
 # out file path - has to be in `tmp` directory
-tif_file = "/tmp/os_water_20250125.tif"
+tif_file = "/tmp/dgl_upland_bog_sum.tif"
 
 # COMMAND ----------
 
@@ -281,7 +314,7 @@ tif_file = "/tmp/os_water_20250125.tif"
 from pyspark.sql.functions import col
 
 # the column with the identifier
-column_name = "os_ngd_water"
+column_name = "raster_score"
 
 # track the first iteration to apply the appropriate function
 first_iteration = True
@@ -289,7 +322,7 @@ first_iteration = True
 # loop through all 100km OS grid codes, extract relevant data and rasterise
 for grid_code in os_grid_codes:
     print(grid_code)
-    sub_comb = data_combined.filter(col("id").contains(grid_code))
+    sub_comb = data_combined_score.filter(col("id").contains(grid_code))
     sub_comb.createOrReplaceTempView("sub_comb")
     sub_comb = spark.sql(f"SELECT * FROM sub_comb WHERE {column_name} > 0")
 
@@ -299,7 +332,7 @@ for grid_code in os_grid_codes:
 
     else:
         # Slight change to sub_comb too
-        sub_comb = sub_comb.select("geometry", "os_ngd_water").toPandas()
+        sub_comb = sub_comb.select("geometry", "raster_score").toPandas()
         if first_iteration:
             print("Running first iteration")
             # use function to create the raster and insert rasterised values

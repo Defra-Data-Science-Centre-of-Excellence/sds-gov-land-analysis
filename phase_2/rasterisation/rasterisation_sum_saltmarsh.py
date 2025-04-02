@@ -1,13 +1,24 @@
 # Databricks notebook source
 # MAGIC %md
+# MAGIC ### Rasterisation - SUM Version - Marine & Coastal Margins
+# MAGIC Creates a 10m resolution raster from centroids data. Raster values represents the sum of selected columns. 
 # MAGIC
-# MAGIC Example script to create a 10m resolution raster from centroids representing 'all 30x30' layers. 
+# MAGIC Miles Clement (miles.clement@defra.gov.uk)
+# MAGIC
+# MAGIC Last Updated 02/04/25
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC
 # MAGIC ### Setup
+# MAGIC ####Packages
+
+# COMMAND ----------
+
+from pathlib import Path
+from pyspark.sql import functions as F
+from pyspark.sql.functions import col
+from affine import Affine
 
 # COMMAND ----------
 
@@ -61,6 +72,7 @@ def rasterise_points_initial(
     """
 
     # Prepare (geometry, raster_score) tuples
+    # This part is different from boolean example
     shapes_with_values = zip(gdf.geometry, gdf["raster_score"])
 
     # Rasterize using the provided values
@@ -157,8 +169,7 @@ def rasterise_points_update(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC
-# MAGIC #### Paths
+# MAGIC #### Paths & Read Data
 
 # COMMAND ----------
 
@@ -166,54 +177,41 @@ from pathlib import Path
 
 # location for outputs
 par_path = Path(
-    "/dbfs/mnt/lab/restricted/ESD-Project/Defra_Land/Assets"
+    "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Final/Asset_Tables"
 )
 
 alt_par_path = str(par_path).replace("/dbfs", "dbfs:")
 
 data_combined = sedona.read.format("parquet").load(
-    f"{alt_par_path}/10m_x_assets_combined_sparse.parquet"
+    f"{alt_par_path}/10m_x_assets_combined_saltmarsh.parquet"
 )
 
 # COMMAND ----------
 
+# Set condition to find rows overlapping DGL (FH or LH)
+condition = ((F.col("dgl_fh") == 1) | (F.col("dgl_lh") == 1)) 
+
+# COMMAND ----------
+
+# DBTITLE 1,Quick print to check cols
 data_combined.display()
 
 # COMMAND ----------
 
-from pyspark.sql import functions as F
+# MAGIC %md
+# MAGIC -----
 
 # COMMAND ----------
 
-# Dense
-condition = (
-    (F.col("le_coniferous") == 1) | 
-    (F.col("le_deciduous") == 1) | 
-    (F.col("lcm_conif_wood") == 1) | 
-    (F.col("lcm_decid_wood") == 1) | 
-    (F.col("rpa_lc_woodland") == 1) |
-    (F.col("nfi") == 1) |
-    (F.col("phi_deciduous") == 1)
-) & (
-    (F.col("dgl_fh") == 1) | 
-    (F.col("dgl_lh") == 1)
-)
+# DBTITLE 1,USER INPUT
+# Define which columns to combine into raster cell
+columns_to_sum = ["le_saltmarsh","phi_saltmarsh","lcm_saltmarsh","ne_marine_saltmarsh"]
 
 # COMMAND ----------
 
-data_combined_score = data_combined.withColumn("raster_score", F.when(condition, 1).otherwise(None))
-
-# COMMAND ----------
-
-condition = (F.col("dgl_fh") == 1) | (F.col("dgl_lh") == 1)
-
-# COMMAND ----------
-
-# Dense
-#columns_to_sum = ["le_coniferous","le_deciduous","lcm_conif_wood","lcm_decid_wood","rpa_lc_woodland","nfi","phi_deciduous"]
-
-# Sparse
-columns_to_sum = ["le_scrub","wood_pasture_park","phi_orchard","fr_tow"]
+# MAGIC %md
+# MAGIC ______
+# MAGIC
 
 # COMMAND ----------
 
@@ -228,17 +226,11 @@ data_combined_score = data_combined.withColumn(
 
 # COMMAND ----------
 
-data_combined_score.display()
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC
 # MAGIC #### Constants
 
 # COMMAND ----------
-
-from affine import Affine
 
 # the names of the 100km grid cells covering the bounds of England (some won't contain data)
 os_grid_codes = [
@@ -309,7 +301,7 @@ transform = Affine(pixel_width, 0, top_left_x, 0, pixel_height, top_left_y)
 # shape of the raster
 shape = (70000, 70000)
 # out file path - has to be in `tmp` directory
-tif_file = "/tmp/dgl_woodland_sparse_sum_291124.tif"
+tif_file = "/tmp/dgl_saltmarsh_sum.tif"
 
 # COMMAND ----------
 
@@ -339,6 +331,7 @@ for grid_code in os_grid_codes:
         print(f"Skipping tile {grid_code} - no data present")
 
     else:
+        # Slight change to sub_comb too
         sub_comb = sub_comb.select("geometry", "raster_score").toPandas()
         if first_iteration:
             print("Running first iteration")
@@ -355,6 +348,10 @@ for grid_code in os_grid_codes:
 from sds_dash_download import download_file
 
 displayHTML(download_file(tif_file, move=False))
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 

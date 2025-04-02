@@ -1,13 +1,24 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC ### Rasterisation - SUM Version
-# MAGIC Example script to create a 10m resolution raster from centroids. Raster values represents the sum of selected columns. 
+# MAGIC ### Rasterisation - SUM Version - Mountain, Moorland & Heath
+# MAGIC Creates a 10m resolution raster from centroids data. Raster values represents the sum of selected columns. 
+# MAGIC
+# MAGIC Miles Clement (miles.clement@defra.gov.uk)
+# MAGIC
+# MAGIC Last Updated 02/04/25
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC
 # MAGIC ### Setup
+# MAGIC ####Packages
+
+# COMMAND ----------
+
+from pathlib import Path
+from pyspark.sql import functions as F
+from pyspark.sql.functions import col
+from affine import Affine
 
 # COMMAND ----------
 
@@ -163,8 +174,6 @@ def rasterise_points_update(
 
 # COMMAND ----------
 
-from pathlib import Path
-
 # location for outputs
 par_path = Path(
     "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Final/Asset_Tables"
@@ -173,32 +182,34 @@ par_path = Path(
 alt_par_path = str(par_path).replace("/dbfs", "dbfs:")
 
 data_combined = sedona.read.format("parquet").load(
-    f"{alt_par_path}/10m_x_assets_combined_upland_bog.parquet"
+    f"{alt_par_path}/10m_x_assets_combined_moorland.parquet"
 )
 
 # COMMAND ----------
 
-from pyspark.sql import functions as F
-
-# COMMAND ----------
-
 # Set condition to find rows overlapping DGL (FH or LH)
-condition = ((F.col("dgl_fh") == 1) | (F.col("dgl_lh") == 1)) & (F.col("moorland_line") == 1)
-#condition = ((F.col("dgl_fh") == 1) | (F.col("dgl_lh") == 1)) 
+condition = ((F.col("dgl_fh") == 1) | (F.col("dgl_lh") == 1)) 
 
 # COMMAND ----------
 
+# DBTITLE 1,Quick print to check cols
 data_combined.display()
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC --------------
+
+# COMMAND ----------
+
 # Define which columns to combine into raster cell
+columns_to_sum = ["le_comb","phi_comb","lcm_comb"]
 
-# Full
-#columns_to_sum = ["le_comb","phi_comb","lcm_comb"]
 
-# Bog Only
-columns_to_sum = ["le_bog","phi_blanket_bog","lcm_bog"]
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC -------------
 
 # COMMAND ----------
 
@@ -218,8 +229,6 @@ data_combined_score = data_combined.withColumn(
 # MAGIC #### Constants
 
 # COMMAND ----------
-
-from affine import Affine
 
 # the names of the 100km grid cells covering the bounds of England (some won't contain data)
 os_grid_codes = [
@@ -290,7 +299,7 @@ transform = Affine(pixel_width, 0, top_left_x, 0, pixel_height, top_left_y)
 # shape of the raster
 shape = (70000, 70000)
 # out file path - has to be in `tmp` directory
-tif_file = "/tmp/dgl_upland_bog_sum_20250215.tif"
+tif_file = "/tmp/dgl_moorland_sum.tif"
 
 # COMMAND ----------
 
@@ -299,8 +308,6 @@ tif_file = "/tmp/dgl_upland_bog_sum_20250215.tif"
 # MAGIC ### Processing
 
 # COMMAND ----------
-
-from pyspark.sql.functions import col
 
 # the column with the identifier
 column_name = "raster_score"

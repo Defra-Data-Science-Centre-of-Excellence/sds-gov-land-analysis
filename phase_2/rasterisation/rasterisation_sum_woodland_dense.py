@@ -1,13 +1,24 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC ### Rasterisation - SUM Version
-# MAGIC Example script to create a 10m resolution raster from centroids. Raster values represents the sum of selected columns. 
+# MAGIC ### Rasterisation - SUM Version - Enclosed Farmland
+# MAGIC Creates a 10m resolution raster from centroids data. Raster values represents the sum of selected columns. 
+# MAGIC
+# MAGIC Miles Clement (miles.clement@defra.gov.uk)
+# MAGIC
+# MAGIC Last Updated 02/04/25
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC
 # MAGIC ### Setup
+# MAGIC ####Packages
+
+# COMMAND ----------
+
+from pathlib import Path
+from pyspark.sql import functions as F
+from pyspark.sql.functions import col
+from affine import Affine
 
 # COMMAND ----------
 
@@ -163,8 +174,6 @@ def rasterise_points_update(
 
 # COMMAND ----------
 
-from pathlib import Path
-
 # location for outputs
 par_path = Path(
     "/dbfs/mnt/lab-res-a1001005/esd_project/Defra_Land/Final/Asset_Tables"
@@ -173,16 +182,12 @@ par_path = Path(
 alt_par_path = str(par_path).replace("/dbfs", "dbfs:")
 
 data_combined = sedona.read.format("parquet").load(
-    f"{alt_par_path}/10m_x_assets_combined_sparse_woodland.parquet"
+    f"{alt_par_path}/10m_x_assets_combined_dense_woodland.parquet"
 )
 
 # COMMAND ----------
 
 data_combined.display()
-
-# COMMAND ----------
-
-from pyspark.sql import functions as F
 
 # COMMAND ----------
 
@@ -192,12 +197,9 @@ condition = (F.col("dgl_fh") == 1) | (F.col("dgl_lh") == 1)
 # COMMAND ----------
 
 # Define which columns to combine into raster cell
-
 # Dense Woodland
-#columns_to_sum = ["le_comb","lcm_comb","nfi_dense","phi_deciduous_woodland"]
+columns_to_sum = ["le_comb","lcm_comb","nfi_dense","phi_deciduous_woodland"]
 
-# Sparse Woodland
-columns_to_sum = ["le_scrub","nfi_sparse","wood_pasture_park","phi_traditional_orchard","fr_tow"]
 
 # COMMAND ----------
 
@@ -217,8 +219,6 @@ data_combined_score = data_combined.withColumn(
 # MAGIC #### Constants
 
 # COMMAND ----------
-
-from affine import Affine
 
 # the names of the 100km grid cells covering the bounds of England (some won't contain data)
 os_grid_codes = [
@@ -289,7 +289,7 @@ transform = Affine(pixel_width, 0, top_left_x, 0, pixel_height, top_left_y)
 # shape of the raster
 shape = (70000, 70000)
 # out file path - has to be in `tmp` directory
-tif_file = "/tmp/dgl_wood_sparse_sum_20250215.tif.tif"
+tif_file = "/tmp/dgl_wood_dense_sum.tif"
 
 # COMMAND ----------
 

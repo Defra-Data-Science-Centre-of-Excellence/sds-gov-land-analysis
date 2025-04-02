@@ -1,13 +1,24 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC ### Rasterisation - SUM Version
-# MAGIC Example script to create a 10m resolution raster from centroids. Raster values represents the sum of selected columns. 
+# MAGIC ### Rasterisation - SUM Version - Water
+# MAGIC Creates a 10m resolution raster from centroids data. Raster values represents the sum of selected columns. 
+# MAGIC
+# MAGIC Miles Clement (miles.clement@defra.gov.uk)
+# MAGIC
+# MAGIC Last Updated 02/04/25
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC
 # MAGIC ### Setup
+# MAGIC ####Packages
+
+# COMMAND ----------
+
+from pathlib import Path
+from pyspark.sql import functions as F
+from pyspark.sql.functions import col
+from affine import Affine
 
 # COMMAND ----------
 
@@ -158,8 +169,7 @@ def rasterise_points_update(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC
-# MAGIC #### Paths
+# MAGIC #### Paths & Read Data
 
 # COMMAND ----------
 
@@ -178,24 +188,30 @@ data_combined = sedona.read.format("parquet").load(
 
 # COMMAND ----------
 
-from pyspark.sql import functions as F
-
-# COMMAND ----------
-
 # Set condition to find rows overlapping DGL (FH or LH)
 condition = ((F.col("dgl_fh") == 1) | (F.col("dgl_lh") == 1)) 
 
 # COMMAND ----------
 
+# DBTITLE 1,Quick print to check cols
 data_combined.display()
 
 # COMMAND ----------
 
-# Define which columns to combine into raster cell
+# MAGIC %md
+# MAGIC ---------
 
-# Full
+# COMMAND ----------
+
+# DBTITLE 1,USER INPUT
+# Define which columns to combine into raster cell
 columns_to_sum = ["le_comb","lcm_comb","phi_comb","os_ngd_water"]
 
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ------------
 
 # COMMAND ----------
 
@@ -210,17 +226,11 @@ data_combined_score = data_combined.withColumn(
 
 # COMMAND ----------
 
-data_combined_score.display()
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC
 # MAGIC #### Constants
 
 # COMMAND ----------
-
-from affine import Affine
 
 # the names of the 100km grid cells covering the bounds of England (some won't contain data)
 os_grid_codes = [
@@ -291,7 +301,7 @@ transform = Affine(pixel_width, 0, top_left_x, 0, pixel_height, top_left_y)
 # shape of the raster
 shape = (70000, 70000)
 # out file path - has to be in `tmp` directory
-tif_file = "/tmp/dgl_water_sum_20250215.tif"
+tif_file = "/tmp/dgl_water_sum.tif"
 
 # COMMAND ----------
 
