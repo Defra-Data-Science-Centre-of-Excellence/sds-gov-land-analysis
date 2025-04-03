@@ -84,19 +84,48 @@ Project Start Date: 10/2024
 
 Project Completion Date: 03/2025
 
-Project Sharepoint Link: [Land Ownership (Spatial Data Science)](https://defra.sharepoint.com/:f:/r/teams/Team1608/ESA%20Team%20Resources/Spatial%20Data%20Science/Workstreams/land_ownership/Outputs?csf=1&web=1&e=vbPSCa)
+Project Sharepoint Link: [Land Ownership (Spatial Data Science)](https://defra.sharepoint.com/:f:/r/sites/WorkDelivery2519/Spatial%20Data%20Science/Workstreams/land_ownership/Phase%20two?csf=1&web=1&e=F3bcne)
+
+Project Report: [Defra Group Estate - Habitat Extents](https://defra.sharepoint.com/:b:/r/sites/WorkDelivery2519/Spatial%20Data%20Science/Workstreams/land_ownership/Phase%20two/Reports/DefraGroupEstate_HabitatExtents.pdf?csf=1&web=1&e=KBgti2)
+
+Project AGOL Webapp: [DEFRA Estate - Habitats](https://defra.maps.arcgis.com/apps/instant/atlas/index.html?appid=39b332638f4a460ab11446c76d19a451&webmap=11670c6b2b97490f9e640caa37a15621)
+
+Webapp Username: DefraEstate_DEFRA
+
+Webapp Password: *************
 
 ### Data
+A range of open-source environmental datasets have been used as indicators for the mapped habitats. This includes data from:
+- Natural England (Living England, Priority Habitats Inventory, Wood Pastures & Parkland, Marine Habitats & Species)
+- UKCEH (Land Cover Map)
+- Forestry Commission (National Forest Inventory, Trees Outside Woodland)
+- Rural Payments Agency (Crop Map of England)
+- Ordnance Survey( National Geographic Database Water Features) 
+- Office of National Statistics (Built-up Areas)
 
 #### Licences
+As above, the data product created from Land Registry data is licenced for full use by Core DEFRA staff only. To share the data product outside Core DEFRA a separate end user licence must be completed and shared with Naomi Lees. Details on how to do this can be found in the [Project Overview document](https://defra.sharepoint.com/:w:/r/teams/Team1608/ESA%20Team%20Resources/Spatial%20Data%20Science/Workstreams/land_ownership/Outputs/Project%20overview.docx?d=wabee27591785443b81a9cd869553824b&csf=1&web=1&e=kvz0rY) on sharepoint.
+
+### Habitats
+Broad habitats mapped include Woodland, Mountain Moorland & Heath, Semi-Natural Grassland, Marine & Coastal Margins, Enclosed Farmland, Freshwater & Wetlands and Urban. Additionally, subsets of some of the habitats were created at the request of policy. These include splitting Woodland into Dense and Sparse, Upland Bog (a subset of Mountain, Moorland & Heath) and Saltmarsh (a subset of Marine & Coastal Margins).
 
 ### Scripts
+Below are details of the scripts found within the [Phase 2](https://github.com/Defra-Data-Science-Centre-of-Excellence/sds-gov-land-analysis/tree/main/phase_2) portion of this repo. The workflow utilises the data model developed within the [sds-spatial-intersector](https://github.com/Defra-Data-Science-Centre-of-Excellence/sds-spatial-intersector) repo.
 
-#### General
+Some of the scripts have multiple versions to represent the processing each habitat type. Where the dataset or habitat name is included in the script name, this is denoted by `*dataset*` or `*habitat*` in the below descriptions.
 
-#### Data production
+#### [Asset Creation](https://github.com/Defra-Data-Science-Centre-of-Excellence/sds-gov-land-analysis/tree/main/phase_2/asset_creation)
+- `10m_x_*dataset*`: create boolean asset tables by intersecting habitat indicator datasets with spatial intersector grid centroids.
 
-#### Data summary
+#### [Asset Combining](https://github.com/Defra-Data-Science-Centre-of-Excellence/sds-gov-land-analysis/tree/main/phase_2/asset_combining)
+- `combine_assets_*habitat*`: combine individual boolean asset tables into matrix containing relevant data sources for the habitat of interest.
 
-#### Data validation
+#### [Rasterisation](https://github.com/Defra-Data-Science-Centre-of-Excellence/sds-gov-land-analysis/tree/main/phase_2/rasterisation)
+- `rasterisation_sum_*habitat*`: rasterisation of data onto 10m pixel grid. Raster value is the sum of the columns that have been identified to indicate a specific habitat, restricted to the Defra estate locations.
+
+#### [Statistics](https://github.com/Defra-Data-Science-Centre-of-Excellence/sds-gov-land-analysis/tree/main/phase_2/statistics)
+- `phase_2_summary_stats`: calculates stats and produces summary tables to summarise results.
+
+#### [Plotting](https://github.com/Defra-Data-Science-Centre-of-Excellence/sds-gov-land-analysis/tree/main/phase_2/plotting)
+- `phase_2_report_plots`: produce plots for phase 2 report. Includes stacked bar chart, bar chart with logarthimic y-axis, and bar chart grouped by organisation.
 
