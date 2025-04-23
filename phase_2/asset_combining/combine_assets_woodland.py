@@ -94,6 +94,20 @@ parquet_list_sparse = [f"{alt_par_path}/{grid_square_size}m_x_dgl_fh.parquet",
                       f"{alt_phi_path}/{grid_square_size}m_x_phi_traditional_orchard.parquet",
                       f"{alt_par_path}/{grid_square_size}m_x_fr_tow.parquet"]
 
+parquet_list_all = [f"{alt_par_path}/{grid_square_size}m_x_dgl_fh.parquet",
+                      f"{alt_par_path}/{grid_square_size}m_x_dgl_lh.parquet",
+                      f"{alt_le_path}/{grid_square_size}m_x_le_scrub.parquet",
+                      f"{alt_par_path}/{grid_square_size}m_x_nfi_sparse.parquet",
+                      f"{alt_par_path}/{grid_square_size}m_x_wood_pasture_park.parquet",
+                      f"{alt_phi_path}/{grid_square_size}m_x_phi_traditional_orchard.parquet",
+                      f"{alt_par_path}/{grid_square_size}m_x_fr_tow.parquet",
+                      f"{alt_le_path}/{grid_square_size}m_x_le_coniferous.parquet",
+                      f"{alt_le_path}/{grid_square_size}m_x_le_deciduous.parquet",
+                      f"{alt_lcm_path}/{grid_square_size}m_x_lcm_coniferous_wood.parquet",
+                      f"{alt_lcm_path}/{grid_square_size}m_x_lcm_deciduous_wood.parquet",
+                      f"{alt_par_path}/{grid_square_size}m_x_nfi_dense.parquet",
+                      f"{alt_phi_path}/{grid_square_size}m_x_phi_deciduous_woodland.parquet"]
+
 # COMMAND ----------
 
 # MAGIC %md
@@ -118,6 +132,7 @@ eng_combo_centroids.createOrReplaceTempView("eng_combo_centroids")
 
 data_combined_dense = eng_combo_centroids
 data_combined_sparse = eng_combo_centroids
+data_combined_all = eng_combo_centroids
 
 # COMMAND ----------
 
@@ -140,11 +155,25 @@ for parquet_path in parquet_list_sparse:
 
 # COMMAND ----------
 
+# Loop through each Parquet file and join it with the base dataset (using ID)
+for parquet_path in parquet_list_all:
+
+    parquet_df = sedona.read.format("parquet").load(parquet_path)
+
+    data_combined_all = data_combined_all.join(parquet_df, on="ID", how="left")
+
+# COMMAND ----------
+
 data_combined_dense.cache()
 data_combined_dense.createOrReplaceTempView("data_combined_dense")
 
 data_combined_sparse.cache()
 data_combined_sparse.createOrReplaceTempView("data_combined_sparse")
+
+# COMMAND ----------
+
+data_combined_all.cache()
+data_combined_all.createOrReplaceTempView("data_combined_all")
 
 # COMMAND ----------
 
@@ -168,6 +197,28 @@ data_combined_dense = data_combined_dense.select(*remaining_columns)
 
 # COMMAND ----------
 
+# Code to prevent double counting from specific habitat
+# eg. arable and improved grassland equals 1, rather than 2 in the final counts when summed together
+# Possibility for Living England, LCM and PHI
+
+# Get column names from source datasets
+le_columns = [col for col in data_combined_all.columns if col.startswith("le")]
+lcm_columns = [col for col in data_combined_all.columns if col.startswith("lcm")]
+phi_columns = [col for col in data_combined_all.columns if col.startswith("phi")]
+
+# Create new columns combining dataset specific columns
+# If any equal 1, than new columns equals 1
+data_combined_all = data_combined_all.withColumn("le_comb", F.when(F.greatest(*[F.col(c) for c in le_columns]) == 1, 1).otherwise(None)) \
+       .withColumn("lcm_comb", F.when(F.greatest(*[F.col(c) for c in lcm_columns]) == 1, 1).otherwise(None)) \
+       .withColumn("phi_comb", F.when(F.greatest(*[F.col(c) for c in phi_columns]) == 1, 1).otherwise(None)) 
+
+# Remove dataset/habitat specific columns 
+exclude_columns = set(le_columns + lcm_columns + phi_columns)
+remaining_columns = [col for col in data_combined_all.columns if col not in exclude_columns]
+data_combined_all = data_combined_all.select(*remaining_columns)
+
+# COMMAND ----------
+
 data_combined_dense.write.format("parquet").mode("overwrite").save(
     f"{alt_out_path}/10m_x_assets_combined_dense_woodland.parquet"
 )
@@ -178,4 +229,6 @@ data_combined_sparse.write.format("parquet").mode("overwrite").save(
 
 # COMMAND ----------
 
-
+data_combined_all.write.format("parquet").mode("overwrite").save(
+    f"{alt_out_path}/10m_x_assets_combined_mixed_woodland.parquet"
+)
