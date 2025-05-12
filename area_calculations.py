@@ -48,6 +48,11 @@ organisations_of_interest = alb_found_names_translation_dict.keys()
 
 # COMMAND ----------
 
+
+polygon_ccod_defra = gpd.read_parquet('/dbfs/mnt/lab-res-a1001005/esd_project/jasmine.elliott@defra.gov.uk/gov_land_analysis/phase_one_final_report_outputs/polygon_ccod_defra.geojson')
+
+# COMMAND ----------
+
 #import defra ccod-polygon data
 polygon_ccod_defra = gpd.read_parquet(polygon_ccod_defra_path)
 
@@ -220,9 +225,22 @@ area_df_small_landowners = area_df[area_df['total_area']<=100]
 
 # COMMAND ----------
 
+display(area_df_non_zero)
+
+# COMMAND ----------
+
+area_df_non_zero = area_df_non_zero[area_df_non_zero['organisation']!='DEFRA (managed by Forestry England/Forestry Commission)']
+
+# COMMAND ----------
+
+area_df_non_zero
+
+# COMMAND ----------
+
 plt.rcParams.update({'font.size': 14})
 
 area_df_non_zero = area_df[area_df['freehold_area']!=0]
+area_df_non_zero = area_df_non_zero[~area_df_non_zero['organisation'].isin(['DEFRA (managed by Forestry England/Forestry Commission)', 'Natural England', 'Environment Agency'])]
 area_df_non_zero = area_df_non_zero.sort_values(by='total_area', ascending=True)
 organisations = area_df_non_zero['organisation']
 areas = {
@@ -252,13 +270,36 @@ ax.set_xlabel('Area (Ha)')
 #ax.set_xscale('symlog')
 ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
 ax.set_title('Total, freehold and leasehold  land area for DEFRA and ALBs', y=1.03)
+
 ax.set_yticks(x + width, organisations, rotation=0)
 handles, labels = ax.get_legend_handles_labels()
 order = [2,1,0]
 ax.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='lower center', ncols=3)
 #ax.legend(loc='upper center', ncols=3)
-ax.set_ylim(0, 18)
-plt.show()
+ax.set_ylim(0, 15)
+#plt.show()
+plt.savefig("/dbfs/mnt/lab-res-a1001005/esd_project/jasmine.elliott@defra.gov.uk/gov_land_analysis/outputs/figure_6_linear_top3_removed.png")
+
+# COMMAND ----------
+
+from sds_dash_download import download_file
+
+# COMMAND ----------
+
+def download_link(filepath):
+    # NB filepath must be in the format dbfs:/ not /dbfs/
+    # Get filename
+    filename = filepath[filepath.rfind("/") :]
+    # Move file to FileStore
+    dbutils.fs.cp(filepath, f"dbfs:/FileStore/{filename}")
+    # Construct download url
+    url = f"https://{spark.conf.get('spark.databricks.workspaceUrl')}/files/{filename}?o={spark.conf.get('spark.databricks.clusterUsageTags.orgId')}"
+    # Return html snippet
+    return f"<a href={url} target='_blank'>Download file: {filename}</a>"
+
+# COMMAND ----------
+
+download_link(filepath="/mnt/lab-res-a1001005/esd_project/jasmine.elliott@defra.gov.uk/gov_land_analysis/outputs/figure_6_linear_top3_removed.png")
 
 # COMMAND ----------
 

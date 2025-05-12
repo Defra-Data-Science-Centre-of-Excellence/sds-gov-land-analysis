@@ -83,6 +83,10 @@ organisations_of_interest = alb_found_names_translation_dict.keys()
 
 # COMMAND ----------
 
+all_defra_land = gpd.read_parquet('/dbfs/mnt/lab-res-a1001005/esd_project/jasmine.elliott@defra.gov.uk/gov_land_analysis/phase_one_final_report_outputs/polygon_ccod_defra.geojson')
+
+# COMMAND ----------
+
 all_defra_land = gpd.read_parquet(polygon_ccod_defra_path)
 
 # COMMAND ----------
