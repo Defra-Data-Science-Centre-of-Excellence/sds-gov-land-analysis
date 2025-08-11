@@ -7,12 +7,16 @@
 # COMMAND ----------
 
 ''' 
-hierarchical nested translation dict in the format:{
+This is a hierarchical nested translation dict in the format:{
     'Current organisation name':{
-        'organisation name instance (current or historic)': [list of found names associated with organisation name instance]
+        'Organisation name instance': [list of found names]
     }
 }
-'organisation name instance (current or historic) is split by word and used for searching
+
+Current organisation name: This is the standardised version of the organisation name. This should be set for organisation and will be used to tag identified identified land parcels in the outputs. So ensure you are happy with the format before proceding.
+organisation name instance (current or historic) is split by word and used for searching.
+Organisation name instance: These are the names which will be searched for in the UK company proprietorship data. Both the 
+
 '''
 
 alb_found_names_translation_dict = {
