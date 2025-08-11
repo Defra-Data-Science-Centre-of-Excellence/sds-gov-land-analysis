@@ -1,4 +1,11 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC ### Data validation overlaps
+# MAGIC Assess overlaps which exist in the data (for freehold only as leasehold overlap is expected), both within defra land and between defra and non-defra land.<br>
+# MAGIC <b>Prerequisites:</b> Before running this step, ensure you have produced a filtered version of the nps-ccod data, for your titles of interest (ie. have run 'identify_land_parcels')
+
+# COMMAND ----------
+
 import geopandas as gpd
 import pandas as pd
 import numpy as np

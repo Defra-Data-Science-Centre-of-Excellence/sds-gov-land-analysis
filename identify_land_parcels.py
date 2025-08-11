@@ -1,5 +1,17 @@
 # Databricks notebook source
 # MAGIC %md
+# MAGIC ### Identify land parcels
+# MAGIC This script will join the filtered ccod dataset to the national polygon service, providing a spatial represention of land ownership for DEFRA and its ALBs. <br>
+# MAGIC The produced dataset will not be flat (there may (probably!) be overlapping polygons where titles overlap). <br>
+# MAGIC <b> Prerequirites: </b> Before running this script, ensure you have a filtered version of the CCOD representing just the organisations of interest (ie. have run the 'identify_title_numbers' script to produce a filtered CCOD for DEFRA and its ALBs) <br>
+# MAGIC <b>Next steps:</b> 
+# MAGIC To help validate the produced datasets, and identify potentially problematic overlaps, use the 'data_validation_overlaps' script.
+# MAGIC To create a flat multipolygon for each organisation, use the 'create_organisation_level_data' script. <br>
+# MAGIC Alternatively, to summarise this spatial dataset by area, use the 'area_calculations' script.
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC #### Setup
 
 # COMMAND ----------
@@ -64,24 +76,15 @@ polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', rig
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### temp
-
-# COMMAND ----------
-
-ccod_defra['Proprietor (1) Address (1)'].unique()
-
-# COMMAND ----------
-
-ccod_defra[ccod_defra['Proprietor (1) Address (1)'].str.contains('Bridge')]
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC #### Optional: extract a study area portion of the NPS
 
 # COMMAND ----------
 
-study_area = gpd.read_parquet(f'{study_area_directory_path}/starcross.parquet')
+# Working with the whole National Polygon Service dataset can be quite cumbersome, so this section allows you to 'cut' the NPS to a sample area (the sample area itself can be created using the 'create_study_boundary' script), and save the cut NPS as a parquet.
+
+# COMMAND ----------
+
+study_area = gpd.read_parquet(f'{study_area_directory_path}/botanic_gardens.parquet')
 
 # COMMAND ----------
 
@@ -89,7 +92,11 @@ study_area_nps = polygon_ccod.overlay(study_area, how='intersection', keep_geom_
 
 # COMMAND ----------
 
-study_area_nps.to_parquet(f'{nps_by_study_area_directory_path}/starcross_nps_ccod.parquet')
+study_area_nps.to_parquet(f'{nps_by_study_area_directory_path}/botanic_gardens_nps_ccod.parquet')
+
+# COMMAND ----------
+
+study_area_nps.explore()
 
 # COMMAND ----------
 
@@ -97,15 +104,7 @@ study_area_npd = national_polygon.overlay(study_area, how='intersection', keep_g
 
 # COMMAND ----------
 
-study_area_npd.explore()
-
-# COMMAND ----------
-
 display(pd.DataFrame(study_area_nps['Proprietor Name (1)'].value_counts()).reset_index())
-
-# COMMAND ----------
-
-study_area_nps.explore()
 
 # COMMAND ----------
 
