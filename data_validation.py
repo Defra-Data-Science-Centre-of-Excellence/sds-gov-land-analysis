@@ -17,8 +17,7 @@ import numpy as np
 
 # COMMAND ----------
 
-polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
-polygon_ccod = gpd.read_parquet(polygon_ccod_path)
+polygon_ccod_defra = gpd.read_parquet(polygon_ccod_defra_path)
 
 # COMMAND ----------
 
@@ -75,7 +74,8 @@ overlaps.dissolve().area.sum()/10000
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Get overlap with non-defra estate
+# MAGIC #### Get overlap of freehold defra estate with freehold non-defra estate
+
 
 # COMMAND ----------
 

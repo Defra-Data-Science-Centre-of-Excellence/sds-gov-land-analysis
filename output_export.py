@@ -30,12 +30,16 @@ def download_link(filepath, convert_filepath=False):
 
 # COMMAND ----------
 
+display(download_link('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/outputs/poster_plot.png', convert_filepath=True))
+
+# COMMAND ----------
+
 display(download_link('/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/validation/overlap_with_non_defra_estate_buffer_05.parquet', convert_filepath=True))
 
 # COMMAND ----------
 
 # read in datasets
-polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
+polygon_ccod_defra = gpd.read_parquet(polygon_ccod_defra_path)
 polygon_ccod_defra.geometry = polygon_ccod_defra.geometry.make_valid()
 polygon_ccod_defra_by_organisation = gpd.read_parquet(polygon_ccod_defra_by_organisation_path)
 polygon_ccod_defra_by_organisation.geometry = polygon_ccod_defra_by_organisation.geometry.make_valid()
@@ -44,15 +48,11 @@ polygon_ccod_defra_by_organisation_tenure.geometry = polygon_ccod_defra_by_organ
 
 # COMMAND ----------
 
-polygon_ccod_defra_by_organisation_tenure
+polygon_ccod_defra['area_ha'] = polygon_ccod_defra.area/10000
 
 # COMMAND ----------
 
-polygon_ccod_defra_by_organisation
-
-# COMMAND ----------
-
-polygon_ccod_defra = polygon_ccod_defra[['POLY_ID','Title Number','Tenure', 'current_organisation', 'historic_organisation', 'Proprietor Name (1)', 'Proprietor Name (2)', 'Proprietor Name (3)', 'Proprietor Name (4)', 'geometry']]
+polygon_ccod_defra
 
 # COMMAND ----------
 

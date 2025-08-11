@@ -61,6 +61,10 @@ epims_point_defra_alb = pd.concat([epims_point_defra, epims_point_fc])
 
 # COMMAND ----------
 
+epims_point[epims_point['DepartmentCode']=='DEFRA']['PropertyCentre'].unique()
+
+# COMMAND ----------
+
 display(pd.DataFrame(epims_point['PropertyCentre'].unique()))
 
 # COMMAND ----------
@@ -161,7 +165,7 @@ area_df.to_csv(csv_area_df_epims_path)
 # COMMAND ----------
 
 # Read in defra polygon dataset created from HMLR data 
-polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
+polygon_ccod_defra = gpd.read_parquet(polygon_ccod_defra_path)
 polygon_ccod_defra = polygon_ccod_defra.explode()
 polygon_ccod_defra.geom_type.unique()
 polygon_ccod_defra['df'] = 'polygon_ccod_defra'
@@ -197,12 +201,30 @@ polygon_ccod_area_epims_kew['Proprietor Name (1)'].unique()
 
 # COMMAND ----------
 
-polygon_ccod_area_epims_kew[polygon_ccod_area_epims_kew['Proprietor Name (1)']=='ARDINGLY ACTIVITY CENTRE LIMITED'].explore()
+organisation_plot_translation_dict = {
+    'SOUTH EAST WATER LIMITED':'Other',
+    'THE NATIONAL TRUST FOR PLACES OF HISTORIC INTEREST OR NATURAL BEAUTY': 'THE NATIONAL TRUST FOR PLACES OF HISTORIC INTEREST OR NATURAL BEAUTY',
+    'ARDINGLY ACTIVITY CENTRE LIMITED':'Other', 
+    'MID-SUSSEX WATER COMPANY':'MID-SUSSEX WATER COMPANY',
+    'THE INCUMBENT OF THE BENEFICE OF ST PETER ARDINGLY':'Other',
+    'WEST SUSSEX COUNTY COUNCIL':'Other',
+    'SOUTH OF ENGLAND AGRICULTURAL SOCIETY':'Other',
+    'THE BOARD OF TRUSTEES OF THE ROYAL BOTANIC GARDENS KEW':'THE BOARD OF TRUSTEES OF THE ROYAL BOTANIC GARDENS KEW',
+    'THE DICKINSON TRUST LIMITED':'Other', 
+    'SOUTH EASTERN POWER NETWORKS PLC':'Other',
+    'THE BOARD OF THE ROYAL BOTANIC GARDENS KEW':'THE BOARD OF THE ROYAL BOTANIC GARDENS KEW',
+    'BUTTERISS DOWNS SOLAR FARM LIMITED':'Other',
+}
+
+# COMMAND ----------
+
+polygon_ccod_area_epims_kew['plot_organisation'] = polygon_ccod_area_epims_kew['Proprietor Name (1)']
+polygon_ccod_area_epims_kew['plot_organisation'] = polygon_ccod_area_epims_kew['plot_organisation'].map(organisation_plot_translation_dict)
 
 # COMMAND ----------
 
 fig, ax = plt.subplots(figsize=(9, 20))
-ax1 = polygon_ccod_area_epims_kew.plot(column='Proprietor Name (1)', legend=True, figsize=(50, 30), ax=ax, cmap='tab20')
+ax1 = polygon_ccod_area_epims_kew.plot(column='plot_organisation', legend=True, figsize=(50, 30), ax=ax, cmap='Paired')
 ax2 = epims_rbk.boundary.plot(color='black', ax=ax)
 ax.set_xticks([])
 ax.set_yticks([])
@@ -216,10 +238,6 @@ plt.show()
 # COMMAND ----------
 
 epims_rbk.explore()
-
-# COMMAND ----------
-
-polygon_ccod_rbk.explore()
 
 # COMMAND ----------
 

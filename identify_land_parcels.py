@@ -65,6 +65,11 @@ national_polygon = gpd.read_parquet(national_polygon_parquet_path)
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##### Join CCOD to polygon data
+
+# COMMAND ----------
+
 # join polygon dataset with unfiltered ccod data - need this to look at adjascent polyogon info etc.
 polygon_ccod = national_polygon.merge(ccod, how='inner', left_on='TITLE_NO', right_on='Title Number')
 
@@ -92,6 +97,14 @@ study_area_nps.to_parquet(f'{nps_by_study_area_directory_path}/botanic_gardens_n
 # COMMAND ----------
 
 study_area_nps.explore()
+
+# COMMAND ----------
+
+study_area_npd = national_polygon.overlay(study_area, how='intersection', keep_geom_type=False, make_valid=True)
+
+# COMMAND ----------
+
+display(pd.DataFrame(study_area_nps['Proprietor Name (1)'].value_counts()).reset_index())
 
 # COMMAND ----------
 
@@ -160,7 +173,7 @@ polygon_ccod_defra_only.to_file(polygon_ccod_defra_path, driver='GeoJSON', mode=
 
 # buffer defra polygons, so can identify adjescent polygons by overlap
 # buffer can be changed as needed
-polygon_ccod_defra_buffered = polygon_ccod_defra
+polygon_ccod_defra_buffered = polygon_ccod_defra.copy()
 polygon_ccod_defra_buffered['geometry'] = polygon_ccod_defra_buffered.geometry.buffer(0.2)
 
 # COMMAND ----------
