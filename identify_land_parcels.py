@@ -101,6 +101,27 @@ study_area_nps.explore()
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ##### Get percentage of defra titles not in 
+
+# COMMAND ----------
+
+all_defra_ccod_polygons = national_polygon.merge(ccod_defra, how='right', left_on='TITLE_NO', right_on='Title Number')
+display(all_defra_ccod_polygons)
+
+# COMMAND ----------
+
+# get a count of titles with no polygon record by organisation
+missing_defra_ccod_polygons = all_defra_ccod_polygons[all_defra_ccod_polygons['TITLE_NO'].isna()]
+missing_defra_ccod_polygons['current_organisation'].value_counts()
+
+# COMMAND ----------
+
+# for context, let's also get the total number of identified defra titles
+len(all_defra_ccod_polygons)
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ##### Join defra ccod to polygon dataset
 
 # COMMAND ----------

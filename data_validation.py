@@ -181,3 +181,50 @@ len(buffered_overlaps['Title Number_1'].unique())
 # COMMAND ----------
 
 buffered_overlaps.dissolve().area.sum()/10000
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Get overlap of freehold defra estate with any leasehold estate
+
+# COMMAND ----------
+
+polygon_ccod_defra_titles = polygon_ccod_defra['Title Number'].unique()
+polygon_ccod_defra_removed = polygon_ccod[~polygon_ccod['Title Number'].isin(polygon_ccod_defra_titles)]
+leasehold_polygon_ccod = polygon_ccod_defra_removed[polygon_ccod_defra_removed['Tenure'] == 'Leasehold']
+
+# COMMAND ----------
+
+overlap_with_non_leasehold_defra_estate = gpd.overlay(freehold_polygon_ccod_defra, leasehold_polygon_ccod, how='intersection', make_valid=True)
+
+# COMMAND ----------
+
+overlap_with_non_leasehold_defra_estate
+
+# COMMAND ----------
+
+overlap_with_non_leasehold_defra_estate.area.sum()/10000
+
+# COMMAND ----------
+
+overlap_with_non_leasehold_defra_estate.dissolve().area.sum()/10000
+
+# COMMAND ----------
+
+leasehold_overlap_area_by_proprietor = pd.DataFrame(overlap_with_non_leasehold_defra_estate.dissolve(by='Proprietor Name (1)_2').area/10000).reset_index(drop=False).sort_values(by=0, ascending=False)
+
+# COMMAND ----------
+
+display(leasehold_overlap_area_by_proprietor)
+
+# COMMAND ----------
+
+leasehold_overlap_area_by_defra_proprietor = pd.DataFrame(overlap_with_non_leasehold_defra_estate.dissolve(by=['current_organisation', 'land_management_organisation'], dropna=False).area/10000).reset_index(drop=False).sort_values(by=0, ascending=False)
+
+# COMMAND ----------
+
+display(leasehold_overlap_area_by_defra_proprietor)
+
+# COMMAND ----------
+
+leasehold_undissolved_overlap_area_by_proprietor = pd.DataFrame(overlap_with_non_leasehold_defra_estate.dissolve(by='Proprietor Name (1)_2').area/10000).reset_index(drop=False).sort_values(by=0, ascending=False)
