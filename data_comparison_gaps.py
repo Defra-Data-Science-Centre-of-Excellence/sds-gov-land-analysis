@@ -1,5 +1,11 @@
 # Databricks notebook source
 # MAGIC %md
+# MAGIC ### Data comparison gaps
+# MAGIC For gaps in our produced dataset identified by data comparisons, get the UK Company Proprietor data for the gaps. This then enables a summary of the data which our model failed to identify for further investigation.
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC #### Setup
 
 # COMMAND ----------

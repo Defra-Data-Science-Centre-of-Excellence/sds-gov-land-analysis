@@ -1,4 +1,11 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC ### Create study boundary
+# MAGIC Through the process it may be useful to work with a small sample area of data for exploration or validation. <br>
+# MAGIC This script creates a square polygon geometry around the easting/northing values provided.
+
+# COMMAND ----------
+
 import geopandas as gpd
 
 # COMMAND ----------

@@ -1,4 +1,10 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC ### Data comparison area
+# MAGIC Script to compare identified proprietor names for defra to proprietor names previously produced for 30x30 work
+
+# COMMAND ----------
+
 # import pandas as pd
 
 # COMMAND ----------

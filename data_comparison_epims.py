@@ -1,5 +1,11 @@
 # Databricks notebook source
 # MAGIC %md
+# MAGIC ### Data comparison epims
+# MAGIC Compare dataset produced using hmlr data to epims, by extracting equivalent data from epims (this requires some translation of organisation names to match format used for HMLR work) and compare, organisation by organisation, both visually and by area figures produced.
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC #### Setup
 
 # COMMAND ----------
