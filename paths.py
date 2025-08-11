@@ -68,7 +68,7 @@ ccod_defra_and_alb_path = "/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@
 
 ccod_defra_path = ""
 # Polygon dataset for the land owned by DEFRA and its ALBs - one record per title
-polygon_ccod_defra_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/mod_outputs/polygon_ccod_mod.geojson'
+polygon_ccod_defra_path = '/dbfs/mnt/lab-res-a1001005/esd_project/jasmine.elliott@defra.gov.uk/gov_land_analysis/mod_outputs/polygon_ccod_mod.geojson'
 polygon_ccod_defra_parquet_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/mod_outputs/polygon_ccod_mod.parquet'
 # Polygon dataset for the land owned by DEFRA and its ALBs - dissolved so there is a single flat multipolygon for each organisation
 polygon_ccod_defra_by_organisation_path = '/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/mod_outputs/polygon_ccod_mod_by_organisation.parquet'
