@@ -36,23 +36,7 @@ from thefuzz import process
 
 # COMMAND ----------
 
-def get_fuzzy_match_min_score(string_to_search: str, match_options: list):
-  '''
-  Finds the best match and best match score for all match options in the search string,
-  then returns the lowest best match score of all of these.
 
-  Parameters:
-    string_to_search (str): string to search and identify best matches from
-    match_options (list): list of match options which need to be identified in the string_to_search
-
-  Returns:
-    minimum score of all the best match scores
-  '''
-  best_match_scores = list()
-  for match_option in match_options:
-    best_match = process.extractOne(match_option,string_to_search.split(' '), scorer=fuzz.ratio)
-    best_match_scores.append(best_match[1])
-  return(min(best_match_scores))
 
 # COMMAND ----------
 
@@ -66,8 +50,7 @@ def get_fuzzy_match_min_score(string_to_search: str, match_options: list):
 
 # COMMAND ----------
 
-# MAGIC %run
-# MAGIC ./constants
+# MAGIC %run ./constants
 
 # COMMAND ----------
 
@@ -104,6 +87,10 @@ ccod.head()
 
 # COMMAND ----------
 
+ccod[ccod['Title Number']=='TY3']
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC
 
@@ -111,7 +98,15 @@ ccod.head()
 
 # MAGIC %md
 # MAGIC #### Method 1: Get titles using generic and specific department identifiers
-# MAGIC This method was made to identify department titles (not ALBs) and involves setting generic and specific department identifiers. <br>In general, the generic department identifiers should not need changing. <br>The specific department identifiers should be changed depending on the department of interest.
+# MAGIC This method was made to identify department titles (not ALBs) and involves setting generic and specific department identifiers. <br>In general, the generic department identifiers should not need changing. <br>The specific department identifiers should be changed depending on the department of interest. These should be changes in the constants notebook (see below)
+# MAGIC <b>Note:</b> This section uses 3 variables assigned in the constants notebook:
+# MAGIC - standardised_department_name
+# MAGIC - generic_department_identifiers
+# MAGIC - specific_department_identifiers
+# MAGIC <br><br>
+# MAGIC If these are updated, ensure the following command has been run before proceding:<br>
+# MAGIC `%run ./constants` <br>
+# MAGIC (this is part of the standard script set run at the top of this notebook)
 
 # COMMAND ----------
 
@@ -121,38 +116,9 @@ ccod.head()
 
 # COMMAND ----------
 
-# Set the name of the department of interest. The name set here will be used later to tag identified titles. So ensure you are happy with the format for your output.
-standardised_department_name = 'Department for Environment, Food and Rural Affairs'
-
-# generic department identifiers, these shouldn't need changing
-cs_department_identifiers = ['state', 'secretary', 'ministry', 'minister', 'department']
-
-# department specific identifiers
-all_cs_department_name_identifiers = ['environment','food','rural', 'agriculture', 'resources', 'fisheries']
-
-# COMMAND ----------
-
-# This cell is an alternative method to set the specific department identifiers
-# However, this alternative method to generate identifiers (below) produced too many outputs when used for DEFRA, as the search parameters became too wide, but could be more useful for other departments
-
-#cs_department_names = {
-#    'Department for Environment, Food and Rural Affairs':
-#        ['environment', 'food', 'rural'],
-#    'Ministry of Agriculture, Fisheries and Food':
-#        ['agriculture', 'fisheries','food'],
-#    'Department for Environment, Transport and the Regions':
-#        ['environment', 'transport','regions']
-#}
-#all_cs_department_name_identifiers = set()
-#for cs_department_name_identifiers in cs_department_names.values():
-#    all_cs_department_name_identifiers.update(cs_department_name_identifiers)
-#all_cs_department_name_identifiers = list(all_cs_department_name_identifiers)
-
-# COMMAND ----------
-
 # find department proprietor names in ccod data using or-and-or method
-ccod_filtered = ccod.loc[ccod['Proprietor Name (1)'].str.contains('|'.join(cs_department_identifiers), case=False, na=False)]
-ccod_filtered = ccod_filtered.loc[ccod_filtered['Proprietor Name (1)'].str.contains('|'.join(all_cs_department_name_identifiers), case=False, na=False)]
+ccod_filtered = ccod.loc[ccod['Proprietor Name (1)'].str.contains('|'.join(generic_department_identifiers), case=False, na=False)]
+ccod_filtered = ccod_filtered.loc[ccod_filtered['Proprietor Name (1)'].str.contains('|'.join(specific_department_identifiers), case=False, na=False)]
 #ccod_filtered = ccod_filtered.loc[ccod_filtered['Proprietorship Category (1)'].str.contains('Corporate Body', case=False, na=False)]
 department_names_from_ccod = ccod_filtered['Proprietor Name (1)'].unique()
 
@@ -160,11 +126,12 @@ department_names_from_ccod = ccod_filtered['Proprietor Name (1)'].unique()
 
 # MAGIC %md
 # MAGIC ##### Remove spurious found proprietor names
+# MAGIC The searching methods often select some incorrect names. These need to be manually checked, and then removed using the below code
 
 # COMMAND ----------
 
 # When run, this cell will display the names in the ccod data which have been identified as relevant
-# These need a human sense check. Look for names which don't relate to the department of interest and make note of them. We will then remove them below.
+# Look for names which don't relate to the department of interest and make note of them. We will then remove them below.
 department_names_from_ccod_df = pd.DataFrame(department_names_from_ccod)
 display(department_names_from_ccod_df)
 
@@ -176,7 +143,7 @@ display(estate_names)
 
 # COMMAND ----------
 
-# all of the 'estate' names are not defra names, so can be removed
+# If all of the 'estate' names are not relevant, they can be removed. This is probably useful for a lot of departments.
 department_names_from_ccod_df = department_names_from_ccod_df[~department_names_from_ccod_df[0].isin(estate_names[0])]
 
 # COMMAND ----------
@@ -192,12 +159,14 @@ display(department_names_from_ccod_df)
 
 # COMMAND ----------
 
+# Optional step. This will help speed up run time of the following section
 # remove any 'duplicates' within the name list (where the only discrepancy is a small typo), so the typo search does not search the same thing multiple times
 to_remove = ['THE SECRETARY OF STATE FOR THE ENVIRONMENT', 'THE MINISTER OF AGRICULTURE, FISHERIES AND FOOD', 'THE SECRETARY OF STATE FOR ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR FOOD ENVIRONMENT AND RURAL AFFAIRS', 'SECRETARY OF STATE  FOR ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE MINISTER OF AGRICULTURE FISHERIES AND FOODS', 'SECRETARY OF STATE FOR THE ENVIRONMENT TRANSPORT AND THE REGIONS>','THE SECRETARY OF STATE FOR THE DEPARTMENT OF THE ENVIRONMENT, FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR THE DEPARTMENT FOR ENVIRONMENT, FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR THE DEPARTMENT OF THE ENVIRONMENT, FOOD AND RURAL AFFAIRS (DEFRA)', 'THE SECRETARY OF STATE FOR THE DEPARTMENT OF THE ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR ENVIRONMENT, FOOD AND RURAL AFFAIRS', 'SECRETARY OF STATE FOR ENVIRONMENT FOOD AND RURAL  AFFAIRS', 'THE SECRETARY OF STATE FOR THE ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR THE ENVIRONMENT, FOOD AND RURAL AFFAIRS']
 department_names_from_ccod_df = department_names_from_ccod_df[~department_names_from_ccod_df[0].isin(to_remove)]
 
 # COMMAND ----------
 
+# Final visual inspection of the list - this is the list of names which will be searched for using typo resilient methods
 display(department_names_from_ccod_df)
 
 # COMMAND ----------
@@ -207,13 +176,12 @@ display(department_names_from_ccod_df)
 
 # COMMAND ----------
 
-cs_department_found_name_translation_dict = {}
-
-# COMMAND ----------
-
 # The last run of this took 8 hours - very slow!
 # I recommend removing as many versions of the defra names above which have typos (as opposed to different, historic names) as possible, to reduce run-time. 
 # Any names with typos should be re-identified by the script below.
+
+# initiate empty dict to store found names
+cs_department_found_name_translation_dict = {}
 for department_name in department_names_from_ccod_df[0].tolist():
     if department_name != '':
         ccod["min_match_ratio"] = ccod["Proprietor Name (1)"].apply(
@@ -222,11 +190,8 @@ for department_name in department_names_from_ccod_df[0].tolist():
         found_names = ccod_filtered['Proprietor Name (1)'].unique()
         # add found potential name to translation dict
         cs_department_found_name_translation_dict[department_name] = found_names.tolist()
-display(cs_department_found_name_translation_dict)
-
-# COMMAND ----------
-
-# add all found names to a set - this will remove any duplicates
+        # add all found names to a set - this will remove any duplicates
+        
 department_found_names = set()
 for value in cs_department_found_name_translation_dict.values():
     department_found_names.update(value)
@@ -240,12 +205,13 @@ print(len(department_found_names))
 # COMMAND ----------
 
 # if needed, output to csv here
-department_found_names.to_csv(defra_names_csv_path)
+#department_found_names.to_csv(defra_names_csv_path)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Populate current organsition field (new) for records with identified Defra proprietor names
+# MAGIC ##### Populate (new) current organsition field in the CCOD data
+# MAGIC Once we have a version of the ccod table with standardised names, we will be able to easily filter for our department of interest
 
 # COMMAND ----------
 
@@ -276,7 +242,9 @@ display(ccod[ccod['current_organisation'].notnull()])
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Populate a translation dict with found names which likely correspond to organisation of interest name instances
+# MAGIC ##### Find potential organisation names
+# MAGIC Using typo resilient search methods, each organisation name instance in the found names translation dict is searched for.
+# MAGIC The translation dict is then populated with these found names.
 
 # COMMAND ----------
 
@@ -296,34 +264,6 @@ for current_org, org_names in alb_found_names_translation_dict.items():
             found_names = ccod_filtered['Proprietor Name (1)'].unique()
             # add found potential name to translation dict
             alb_found_names_translation_dict[current_org][org_name] = found_names.tolist()
-display(alb_found_names_translation_dict)
-
-# COMMAND ----------
-
-# OLD METHOD - DOESN'T ACCOUNT FOR TYPOS
-# find likely names to populate translation dict
-#regex_str = r'^{}'
-#expression = '(?=.*{})'
-#for current_org, org_names in alb_found_names_translation_dict.items():
-#    for org_name in org_names:
-#        if org_name != '':
-#            # identify titles registered under current name and tag with current and current organisation
-#            compiled_regex_str = regex_str.format(''.join(expression.format(word) for word in org_name.split(' ')))
-#            ccod_filtered = ccod[ccod['Proprietor Name (1)'].str.contains(f'{compiled_regex_str}', case=False, na=False)]
-#            found_names = ccod_filtered['Proprietor Name (1)'].unique()
-#            # add found potential name to translation dict
-#            alb_found_names_translation_dict[current_org][org_name] = found_names.tolist()
-#display(alb_found_names_translation_dict)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ##### QA produced translation dictionary for Proprietor Name - Organisation translation
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ###### Output translation dict for manual QA
 
 # COMMAND ----------
 
@@ -335,38 +275,16 @@ display(alb_found_names_translation_df)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ###### Remove incorrect found names from translation dict
+# MAGIC ##### Remove spurious names
+# MAGIC The typo resilient search methods used often select some incorrect names. These need to be manually checked and removed if necessary. This removal can be done using the code below, or by outputting to csv and re-uploading an edited version.
+# MAGIC
+# MAGIC If using the code below, not there are 2 functions which can be used for name removal:
+# MAGIC - remove_found_name - requires 4 paramaters passed (current_organisation_name, organisation_instance_name, found_name_for_removal, alb_found_names_translation_dict). It will remove a specific found name.
+# MAGIC - remove_all_found_names - requires 2 parameters passed (current_organisation_name, alb_found_names_translation_dict). It will remove all found names for an orgnaisation.
 
 # COMMAND ----------
 
-# Functions to remove found names from translation dict
 
-def remove_found_name(current_organisation_name, organisation_instance_name, found_name_for_removal, alb_found_names_translation_dict):
-    '''
-    Remove specific found name for organsation/organisation instance
-    Parameters:
-        current_organisation (str): current name of the organisation the found name to remove is associated with
-        organisation_instance_name (str): instance (current or historic) name of the organisation the found name to remove is associated with
-        found_name_for_removal (str): found name to remove from translation dict # Could be useful to let this accept a list, which would remove the need for 'for loops' in the following cells
-        alb_found_names_translation_dict: alb found proprietor name - organisation translation dict
-    '''
-    try:
-        alb_found_names_translation_dict[current_organisation_name][organisation_instance_name].remove(found_name_for_removal)
-        print(f'{found_name_for_removal} removed from current org: {current_organisation_name}, organisation instance: {organisation_instance_name}')
-        print(f'This leaves the remaining found names: {alb_found_names_translation_dict[current_organisation_name][organisation_instance_name]}')
-    except:
-        print(f'WARNING: {found_name_for_removal} not found in current org: {current_organisation_name}, organisation instance: {organisation_instance_name}')
-
-# Functions to remove all found names for single organisation from translation dict, created for easier manual qa implementation (use if on inspection all names for one organisation are incorrect. Otherwise use above function instead)
-def remove_all_found_names(current_organisation_name, alb_found_names_translation_dict):
-    '''
-    Remove all found names for an organisation
-        Parameters:
-        current_organisation (str): current name of the organisation to remove all found names for
-        alb_found_names_translation_dict: alb found proprietor name - organisation translation dict
-    '''
-    for organisation_instance_name in alb_found_names_translation_dict[current_organisation_name].keys():
-        alb_found_names_translation_dict[current_organisation_name][organisation_instance_name] = []
 
 
 # COMMAND ----------

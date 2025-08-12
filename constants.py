@@ -6,6 +6,17 @@
 
 # COMMAND ----------
 
+# Set the name of the department of interest. The name set here will be used later to tag identified titles. So ensure you are happy with the format for your output.
+standardised_department_name = 'Department for Environment, Food and Rural Affairs'
+
+# generic department identifiers, these shouldn't need changing
+generic_department_identifiers = ['state', 'secretary', 'ministry', 'minister', 'department']
+
+# department specific identifiers
+specific_department_identifiers = ['environment','food','rural', 'agriculture', 'resources', 'fisheries']
+
+# COMMAND ----------
+
 ''' 
 This is a hierarchical nested translation dict in the format:{
     'Current organisation name':{
