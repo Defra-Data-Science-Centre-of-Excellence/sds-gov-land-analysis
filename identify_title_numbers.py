@@ -32,16 +32,11 @@ from thefuzz import process
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Define functions
+# MAGIC ##### Run setup notebooks
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ##### Set file paths
+# MAGIC %run ./functions
 
 # COMMAND ----------
 
@@ -84,15 +79,6 @@ ccod = pd.read_csv(
 )
 ccod["Proprietor Name (1)"] = ccod["Proprietor Name (1)"].astype(str)
 ccod.head()
-
-# COMMAND ----------
-
-ccod[ccod['Title Number']=='TY3']
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC
 
 # COMMAND ----------
 
@@ -149,7 +135,7 @@ department_names_from_ccod_df = department_names_from_ccod_df[~department_names_
 # COMMAND ----------
 
 # remove any other spurious names by adding to to_remove list
-to_remove = ['STATESIDE FOODS LIMITED', 'OUR ENVIRONMENTAL DEPARTMENT LIMITED']
+to_remove = ['STATESIDE FOODS LIMITED', 'OUR ENVIRONMENTAL DEPARTMENT LIMITED',]
 department_names_from_ccod_df = department_names_from_ccod_df[~department_names_from_ccod_df[0].isin(to_remove)]
 
 # COMMAND ----------
@@ -161,7 +147,7 @@ display(department_names_from_ccod_df)
 
 # Optional step. This will help speed up run time of the following section
 # remove any 'duplicates' within the name list (where the only discrepancy is a small typo), so the typo search does not search the same thing multiple times
-to_remove = ['THE SECRETARY OF STATE FOR THE ENVIRONMENT', 'THE MINISTER OF AGRICULTURE, FISHERIES AND FOOD', 'THE SECRETARY OF STATE FOR ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR FOOD ENVIRONMENT AND RURAL AFFAIRS', 'SECRETARY OF STATE  FOR ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE MINISTER OF AGRICULTURE FISHERIES AND FOODS', 'SECRETARY OF STATE FOR THE ENVIRONMENT TRANSPORT AND THE REGIONS>','THE SECRETARY OF STATE FOR THE DEPARTMENT OF THE ENVIRONMENT, FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR THE DEPARTMENT FOR ENVIRONMENT, FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR THE DEPARTMENT OF THE ENVIRONMENT, FOOD AND RURAL AFFAIRS (DEFRA)', 'THE SECRETARY OF STATE FOR THE DEPARTMENT OF THE ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR ENVIRONMENT, FOOD AND RURAL AFFAIRS', 'SECRETARY OF STATE FOR ENVIRONMENT FOOD AND RURAL  AFFAIRS', 'THE SECRETARY OF STATE FOR THE ENVIRONMENT FOOD AND RURAL AFFAIRS', 'THE SECRETARY OF STATE FOR THE ENVIRONMENT, FOOD AND RURAL AFFAIRS']
+to_remove = ['THE SECRETARY OF STATE FOR THE ENVIRONMENT',]
 department_names_from_ccod_df = department_names_from_ccod_df[~department_names_from_ccod_df[0].isin(to_remove)]
 
 # COMMAND ----------
@@ -205,7 +191,7 @@ print(len(department_found_names))
 # COMMAND ----------
 
 # if needed, output to csv here
-#department_found_names.to_csv(defra_names_csv_path)
+#department_found_names.to_csv(department_found_names_csv_path)
 
 # COMMAND ----------
 
@@ -284,11 +270,6 @@ display(alb_found_names_translation_df)
 
 # COMMAND ----------
 
-
-
-
-# COMMAND ----------
-
 remove_all_found_names('Animal, Plant Health Agency', alb_found_names_translation_dict)
 
 # COMMAND ----------
@@ -296,38 +277,6 @@ remove_all_found_names('Animal, Plant Health Agency', alb_found_names_translatio
 ea_wrong_names = ['THE ENVIRONMENT AGENCY (WALES)']
 for name in ea_wrong_names:
     remove_found_name('Environment Agency', 'Environment Agency', name, alb_found_names_translation_dict)
-
-# COMMAND ----------
-
-fc_wrong_names = ['NHS WALTHAM FOREST CLINICAL COMMISSIONING GROUP',]
-for name in fc_wrong_names:
-    remove_found_name('Forestry Commission', 'Forestry Commission', name, alb_found_names_translation_dict)
-
-fe_wrong_names = ["HEART OF ENGLAND FOREST LIMITED","THE HEART OF ENGLAND FOREST LTD","HEART OF ENGLAND FOREST","ARDEN FOREST CHURCH OF ENGLAND MULTI ACADEMY TRUST","THE HEART OF ENGLAND FOREST","ARDEN FOREST CHURCH OF ENGLAND MULTI-ACADEMY TRUST","THE HEART OF ENGLAND FOREST LIMITED"]
-for name in fe_wrong_names:
-    remove_found_name('Forestry Commission', 'Forestry England', name, alb_found_names_translation_dict)
-
-fr_wrong_names = ["FORRESTER RESEARCH LIMITED"]
-for name in fr_wrong_names:
-    remove_found_name('Forestry Commission', 'Forestry Research', name, alb_found_names_translation_dict)
-
-# COMMAND ----------
-
-british_wool_wrong_names = ['ROYAL BRITISH LEGION WOOLSTON WITH MARTINSCROFT EX SERVICEMANS CLUB LIMITED', 'WOOL ROYAL BRITISH LEGION CLUB LIMITED',"BRITISH WOOL COMPANY (WEMBLEY) LIMITED","BRITISH WOOL MARKETING BOARD"]
-for name in british_wool_wrong_names:
-    remove_found_name('British Wool', 'British Wool', name, alb_found_names_translation_dict)
-
-# COMMAND ----------
-
-flood_re_wrong_names = ['119 FLOOD STREET LIMITED', 'LONDON FLOOD PREVENTION LTD', 'FLOOD STREET MANAGEMENT COMPANY LIMITED', '109 FLOOD STREET LIMITED', 'FLOOD STREET LIMITED', 'FLOODLIGHT LEISURE LIMITED', '24 HR FIRE & FLOOD ASSISTANCE LIMITED', '111 FLOOD STREET LIMITED', '115 FLOOD STREET LIMITED']
-for name in flood_re_wrong_names:
-    remove_found_name('Flood Re', 'Flood Re', name, alb_found_names_translation_dict)
-
-# COMMAND ----------
-
-seafish_wrong_names = ["BRIXHAM SEAFISH COMPANY LIMITED","SEAFISH IMPORTERS LIMITED","SEAFISH U.K. LIMITED",'B SELFISH LIMITED', 'B SELFISH LTD']
-for name in seafish_wrong_names:
-    remove_found_name('Seafish', 'Seafish', name, alb_found_names_translation_dict)
 
 # COMMAND ----------
 
@@ -362,46 +311,12 @@ display(ccod)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Filter to remove non defra/ALB data
+# MAGIC #### Filter to remove ccod records not relating to department
 
 # COMMAND ----------
 
 ccod_of_interest = (ccod[ccod['current_organisation'].notna()])
 display(ccod_of_interest)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Disentangle forestry commission and DEFRA titles
-
-# COMMAND ----------
-
-### Note: the relationship between land owned by Forestry England, Forestry Commission and Defra is very complicated. So it may not always be appropriate to try to separate FE and DEFRA land. It has been done here for the purpose of better understanding the data and practical management of the land
-
-# COMMAND ----------
-
-# based on comparison to Forestry commission ownership data, search terms to delineate defra and Forestry England titles have been identified, although these are not comprehensive as other identified search terms would also identify defra properties
-search_terms_list = [
-    ['BS16','1EJ'],
-    ['coldharbour'],
-    ['SY8', '2HD']
-]
-for search_terms in search_terms_list:
-    ccod_of_interest["fc_min_match_ratio"] = ccod_of_interest['Proprietor (1) Address (1)'].apply(
-                    lambda x: get_fuzzy_match_min_score(x, search_terms))
-    mask = ccod_of_interest['fc_min_match_ratio'] > 80
-    ccod_of_interest['current_organisation'][mask] = 'Forestry Commission'
-    ccod_of_interest = ccod_of_interest.drop(columns=['fc_min_match_ratio'])
-
-
-# COMMAND ----------
-
-display(ccod_of_interest[ccod_of_interest['current_organisation']=='Forestry Commission'])
-
-# COMMAND ----------
-
-fc_ccod = ccod_of_interest[ccod_of_interest['Proprietor (1) Address (1)'].str.contains('TA1 4AP', case=False, na=False)]
-fc_ccod
 
 # COMMAND ----------
 
@@ -420,4 +335,4 @@ display(ccod_of_interest)
 
 # COMMAND ----------
 
-ccod_of_interest.to_csv("/dbfs/mnt/lab/restricted/ESD-Project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/ccod_of_interest_defra_and_albs_fc_sorted.csv")
+ccod_of_interest.to_csv(department_ccod_path)

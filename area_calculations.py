@@ -37,7 +37,7 @@ pd.options.display.float_format = '{:.2f}'.format
 
 # COMMAND ----------
 
-alb_found_names_translation_dict.update({'Department for Environment, Food and Rural Affairs': None})
+alb_found_names_translation_dict.update({standardised_department_name: None})
 organisations_of_interest = alb_found_names_translation_dict.keys()
 
 
@@ -48,8 +48,8 @@ organisations_of_interest = alb_found_names_translation_dict.keys()
 
 # COMMAND ----------
 
-#import defra ccod-polygon data
-polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
+#import department ccod-polygon data
+department_polygons = gpd.read_parquet(department_polygons_path)
 
 # COMMAND ----------
 
@@ -61,7 +61,7 @@ polygon_ccod_defra = gpd.read_file(polygon_ccod_defra_path)
 area_df = pd.DataFrame(columns=['organisation', 'total_area', 'freehold_area', 'leasehold_area', 'overlap_freehold_leasehold'])
 #For each organisation of interest
 for organisation in organisations_of_interest:
-    organisation_polygon_ccod = polygon_ccod_defra[polygon_ccod_defra['current_organisation'] == organisation]
+    organisation_polygon_ccod = department_polygons[department_polygons['current_organisation'] == organisation]
     # get total area
     organisation_polygon_ccod.geometry = organisation_polygon_ccod.geometry.make_valid()
     total_area = organisation_polygon_ccod.dissolve().area.sum()/10000
