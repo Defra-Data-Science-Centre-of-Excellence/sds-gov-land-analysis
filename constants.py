@@ -14,7 +14,7 @@ generic_department_identifiers = ['state', 'secretary', 'ministry', 'minister', 
 
 # department specific identifiers
 # this should be in the format ['name'] if only one identifier provided, otherwise in the format ['name_1', 'name_2', 'name_X'] if more than one identifier is provided
-specific_department_identifiers = ['environment','food','rural', 'agriculture', 'resources', 'fisheries']
+specific_department_identifiers = ['justice']
 
 # COMMAND ----------
 

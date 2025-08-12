@@ -147,7 +147,7 @@ display(department_names_from_ccod_df)
 
 # Optional step. This will help speed up run time of the following section
 # remove any 'duplicates' within the name list (where the only discrepancy is a small typo), so the typo search does not search the same thing multiple times
-to_remove = ['THE SECRETARY OF STATE FOR THE ENVIRONMENT',]
+to_remove = ['THE SECRETARY OF STATE FOR JUSTICE','THE SECRETARY OF STATE FOR THE JUSTICE', 'THE SECRETARY OF STATE FOR JUSTICE ON BEHALF OF THE CROWN', 'HER MAJESTYS PRINCIPAL SECRETARY OF STATE FOR JUSTICE','THE SECRETARY OF STATE FOR  JUSTICE','SECRETARY OF STATE FOR JUSTICE ACTING BY NATIONAL OFFENDER MANAGEMENT SERVICE']
 department_names_from_ccod_df = department_names_from_ccod_df[~department_names_from_ccod_df[0].isin(to_remove)]
 
 # COMMAND ----------
