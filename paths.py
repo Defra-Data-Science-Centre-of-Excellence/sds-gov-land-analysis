@@ -12,7 +12,7 @@
 
 # raw inputs
 # UK Company Proprietorship dataset - links title numbers and companies (including public sector, but not including charities or private ownership) which own the title
-ccod_path = '/dbfs/mnt/lab-res-a1001005/esd_project/source_data_gov_hm_land_registry/dataset_use_land_and_property_data/format_CSV_use_land_and_property_data/LATEST_use_land_and_property_data/CCOD_FULL_2025_08.csv'
+ccod_path = '/Volumes/prd_dash_lab/esa_unrestricted/esa/gov_land/CCOD_FULL_2025_08.csv'
 # National polygon dataset - links polygon geometries with associated title numbers
 national_polygon_paths = [
     '/dbfs/mnt/base/restricted/source_data_gov_hm_land_registry/dataset_nps_national_polygon/format_SHP_nps_national_polygon/LATEST_nps_national_polygon/LR_POLY_FULL_MAY_2024_0.shp',
@@ -57,7 +57,7 @@ department_found_names_csv_path = "/dbfs/mnt/lab-res-a1001005/esd_project/jasmin
 # COMMAND ----------
 
 # CCOD records (including title  numbers) identified as aosciated with DEFRA or its ALBs
-department_ccod_path = "/dbfs/mnt/lab-res-a1001005/esd_project/jasmine.elliott@defra.gov.uk/gov_land_analysis/ccod_outputs/ccod_of_interest_defra_and_albs_fc_sorted.csv"
+department_ccod_path = '/Volumes/prd_dash_lab/esa_unrestricted/esa/gov_land/MoJ_CCOD.csv'
 
 # COMMAND ----------
 
