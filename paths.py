@@ -57,7 +57,7 @@ department_found_names_csv_path = "/dbfs/mnt/lab-res-a1001005/esd_project/jasmin
 # COMMAND ----------
 
 # CCOD records (including title  numbers) identified as aosciated with DEFRA or its ALBs
-department_ccod_path = '/Volumes/prd_dash_lab/esa_unrestricted/esa/gov_land/MoJ_CCOD.csv'
+department_ccod_path = '/Volumes/prd_dash_lab/esa_unrestricted/esa/gov_land/DfT_CCOD.csv'
 
 # COMMAND ----------
 
